@@ -17,7 +17,9 @@
 % a parametricity class is a pair of map classes (levels in our hierarchy)
 kind map-class type.
 type map0  map-class.
-type map1  map-class.
+type map1a map-class.
+type map1b map-class.
+type map1c map-class.
 type map2a map-class.
 type map2b map-class.
 type map3  map-class.
@@ -30,8 +32,11 @@ type high class-kind.
 type all class-kind.
 
 pred map-classes o:class-kind, o:list map-class.
-map-classes all [map0, map1, map2a, map2b, map3, map4].
-map-classes low [map0, map1, map2a].
+map-classes all Classes :-
+  map-classes low LowClasses,
+  map-classes high HighClasses,
+  std.append LowClasses HighClasses Classes.
+map-classes low [map0, map1a, map1b, map1c, map2a].
 map-classes high [map2b, map3, map4].
 
 pred sym-rel o:gref.
@@ -45,7 +50,9 @@ type pc map-class -> map-class -> param-class.
 
 pred map->class o:map-class, o:gref.
 map->class map0 {{:gref lib:trocq.map0}}.
-map->class map1 {{:gref lib:trocq.map1}}.
+map->class map1a {{:gref lib:trocq.map1a}}.
+map->class map1b {{:gref lib:trocq.map1b}}.
+map->class map1c {{:gref lib:trocq.map1c}}.
 map->class map2a {{:gref lib:trocq.map2a}}.
 map->class map2b {{:gref lib:trocq.map2b}}.
 map->class map3 {{:gref lib:trocq.map3}}.
@@ -53,7 +60,9 @@ map->class map4 {{:gref lib:trocq.map4}}.
 
 pred map-class->indc-class o:map-class, o:gref.
 map-class->indc-class map0 {{:gref lib:trocq.indc_map0}}.
-map-class->indc-class map1 {{:gref lib:trocq.indc_map1}}.
+map-class->indc-class map1a {{:gref lib:trocq.indc_map1a}}.
+map-class->indc-class map1b {{:gref lib:trocq.indc_map1b}}.
+map-class->indc-class map1c {{:gref lib:trocq.indc_map1c}}.
 map-class->indc-class map2a {{:gref lib:trocq.indc_map2a}}.
 map-class->indc-class map2b {{:gref lib:trocq.indc_map2b}}.
 map-class->indc-class map3 {{:gref lib:trocq.indc_map3}}.
@@ -68,7 +77,9 @@ term->map-class (pglobal Map _) Class :- map-class->indc-class Class Map.
 
 pred map-class->string i:map-class, o:string.
 map-class->string map0  "0".
-map-class->string map1  "1".
+map-class->string map1a "1a".
+map-class->string map1b "1b".
+map-class->string map1c "1c".
 map-class->string map2a "2a".
 map-class->string map2b "2b".
 map-class->string map3  "3".
@@ -89,47 +100,63 @@ param-class->add-2-suffix Sep Class1 Class2 P S :-
 % names of the fields contained in a witness of a given level
 pred map-class->fields i:map-class, o:list string.
 map-class->fields map0  [].
-map-class->fields map1  ["map"].
-map-class->fields map2a ["map", "map_in_R"].
-map-class->fields map2b ["map", "R_in_map"].
-map-class->fields map3  ["map", "map_in_R", "R_in_map"].
-map-class->fields map4  ["map", "map_in_R", "R_in_map", "R_in_mapK"].
+map-class->fields map1a ["is_total"].
+map-class->fields map1b ["is_right_unique"].
+map-class->fields map1c ["map"].
+map-class->fields map2a ["is_total", "map", "map_in_R"].
+map-class->fields map2b ["is_right_unique", "map", "R_in_map"].
+map-class->fields map3  ["is_total", "is_right_unique", "map", "map_in_R", "R_in_map"].
+map-class->fields map4  ["is_total", "is_right_unique", "map", "map_in_R", "R_in_map", "R_in_mapK"].
 
 pred map-class->cofields i:map-class, o:list string.
 map-class->cofields map0  [].
-map-class->cofields map1  ["comap"].
-map-class->cofields map2a ["comap", "comap_in_R"].
-map-class->cofields map2b ["comap", "R_in_comap"].
-map-class->cofields map3  ["comap", "comap_in_R", "R_in_comap"].
-map-class->cofields map4  ["comap", "comap_in_R", "R_in_comap", "R_in_comapK"].
+map-class->cofields map1a ["is_right_total"].
+map-class->cofields map1b ["is_left_unique"].
+map-class->cofields map1c ["comap"].
+map-class->cofields map2a ["is_right_total", "comap", "comap_in_R"].
+map-class->cofields map2b ["is_left_unique", "comap", "R_in_comap"].
+map-class->cofields map3  ["is_left_unique", "is_right_total", "comap", "comap_in_R", "R_in_comap"].
+map-class->cofields map4  ["is_left_unique", "is_right_total", "comap", "comap_in_R", "R_in_comap", "R_in_comapK"].
 
 namespace map-class {
 
 % lower/higher levels at distance 1 from a given level
 pred weakenings-from i:map-class, o:list map-class.
 weakenings-from map0  [].
-weakenings-from map1  [map0].
-weakenings-from map2a [map1].
-weakenings-from map2b [map1].
+weakenings-from map1a [map0].
+weakenings-from map1b [map0].
+weakenings-from map1c [map0].
+weakenings-from map2a [map1a, map1c].
+weakenings-from map2b [map1b, map1c].
 weakenings-from map3  [map2a, map2b].
 weakenings-from map4  [map3].
 
+% TODO: ensure consistency (transitivity)
+
+% TODO: genererate from weakenings-from
 pred weakenings-to i:map-class, o:list map-class.
-weakenings-to map0  [map1].
-weakenings-to map1  [map2a, map2b].
+weakenings-to map0  [map1a, map1b, map1c].
+weakenings-to map1a [map2a].
+weakenings-to map1b [map2b].
+weakenings-to map1c [map2a, map2b].
 weakenings-to map2a [map3].
 weakenings-to map2b [map3].
 weakenings-to map3  [map4].
 weakenings-to map4  [].
 
-% lower/higher levels at distance 1 from a given level
 pred all-weakenings-from i:map-class, o:list map-class.
-all-weakenings-from map0  [].
-all-weakenings-from map1  [map0].
-all-weakenings-from map2a [map1, map0].
-all-weakenings-from map2b [map1, map0].
-all-weakenings-from map3  [map2a, map2b, map1, map0].
-all-weakenings-from map4  [map3, map2a, map2b, map1, map0].
+all-weakenings-from Class Weakenings :-
+  map-class.weakenings-from Class DirectWeakinings,
+  std.fold DirectWeakinings [] (weakening\ acc\ out\
+    all-weakenings-from weakening SubWeakenings,
+    std.append SubWeakenings (weakening::acc) out
+  ) WithDups,
+
+  std.fold WithDups [] (weakening\ acc\ out\
+    if (std.mem acc weakening)
+      (out = acc)
+      (out = weakening::acc)
+  ) Weakenings.
 
 % all possible parametricity classes that can be created by combinations of 2 lists of map classes
 pred product i:list map-class, i:list map-class, o:list param-class.

@@ -13,7 +13,7 @@
 
 From Coq Require Import ssreflect.
 From HoTT Require Import HoTT.
-Require Import HoTT_additions Database.
+From Trocq Require Import HoTT_additions Database.
 From elpi Require Import elpi.
 
 From Trocq.Elpi Extra Dependency "param-class.elpi" as param_class.
@@ -25,10 +25,12 @@ Unset Universe Minimization ToSet.
 Set Polymorphic Inductive Cumulativity.
 
 (* Coq representation of the hierarchy *)
-Inductive map_class : Set := map0 | map1 | map2a | map2b | map3 | map4.
+Inductive map_class : Set := map0 | map0a | map0b | map1 | map2a | map2b | map3 | map4.
 
 Register map0 as trocq.indc_map0.
-Register map1 as trocq.indc_map1.
+Register map0a as trocq.indc_map1a.
+Register map0b as trocq.indc_map1b.
+Register map1 as trocq.indc_map1c.
 Register map2a as trocq.indc_map2a.
 Register map2b as trocq.indc_map2b.
 Register map3 as trocq.indc_map3.
@@ -43,17 +45,31 @@ Register paths as trocq.paths.
 (* first unilateral witnesses describing one side of the structure given to a relation *)
 
 Module Map0.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {}.
+Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+}.
 End Map0.
 
-Module Map1.
+Module Map1a.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  map : A -> B
+  is_total : forall a, merely (exists b, R a b)
 }.
-End Map1.
+End Map1a.
+
+Module Map1b.
+Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_right_unique : forall a b c, R a b -> R a c -> b = c
+}.
+End Map1b.
+
+Module Map1c.
+Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  map : A -> B;
+}.
+End Map1c.
 
 Module Map2a.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_total : forall a, merely (exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b
 }.
@@ -61,6 +77,7 @@ End Map2a.
 
 Module Map2b.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_right_unique : forall a b c, R a b -> R a c -> b = c;
   map : A -> B;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b
 }.
@@ -68,6 +85,8 @@ End Map2b.
 
 Module Map3.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_right_unique : forall a b c, R a b -> R a c -> b = c;
+  is_total : forall a, merely (exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b
@@ -78,6 +97,8 @@ Module Map4.
 (* An alternative presentation of Sozeau, Tabareau, Tanter's univalent parametricity:
    symmetrical and transport-free *)
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_right_unique : forall a b c, R a b -> R a c -> b = c;
+  is_total : forall a, merely (exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b;
@@ -86,7 +107,9 @@ Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
 End Map4.
 
 Register Map0.Has as trocq.map0.
-Register Map1.Has as trocq.map1.
+Register Map1a.Has as trocq.map1a.
+Register Map1b.Has as trocq.map1b.
+Register Map1c.Has as trocq.map1c.
 Register Map2a.Has as trocq.map2a.
 Register Map2b.Has as trocq.map2b.
 Register Map3.Has as trocq.map3.
@@ -200,26 +223,57 @@ Elpi Typecheck.
 
 Coercion forgetMap43@{i}
   {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map4.Has@{i} R) : Map3.Has@{i} R :=
-    @Map3.BuildHas A B R (@Map4.map A B R m) (@Map4.map_in_R A B R m) (@Map4.R_in_map A B R m).
+    @Map3.BuildHas A B R
+      (@Map4.is_right_unique A B R m)
+      (@Map4.is_total A B R m)
+      (@Map4.map A B R m)
+      (@Map4.map_in_R A B R m)
+      (@Map4.R_in_map A B R m).
 
 Coercion forgetMap32a@{i}
   {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i} R) : Map2a.Has@{i} R :=
-    @Map2a.BuildHas A B R (@Map3.map A B R m) (@Map3.map_in_R A B R m).
+    @Map2a.BuildHas A B R
+      (@Map3.is_total A B R m)
+      (@Map3.map A B R m)
+      (@Map3.map_in_R A B R m).
 
 Coercion forgetMap32b@{i}
   {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i} R) : Map2b.Has@{i} R :=
-    @Map2b.BuildHas A B R (@Map3.map A B R m) (@Map3.R_in_map A B R m).
+    @Map2b.BuildHas A B R
+      (@Map3.is_right_unique A B R m)
+      (@Map3.map A B R m)
+      (@Map3.R_in_map A B R m).
 
-Coercion forgetMap2a1@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i} R) : Map1.Has@{i} R :=
-    @Map1.BuildHas A B R (@Map2a.map A B R m).
+Coercion forgetMap2a1a@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i} R) : Map1a.Has@{i} R :=
+    @Map1a.BuildHas A B R
+      (@Map2a.is_total A B R m).
 
-Coercion forgetMap2b1@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2b.Has@{i} R) : Map1.Has@{i} R :=
-    @Map1.BuildHas A B R (@Map2b.map A B R m).
+Coercion forgetMap2b1b@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2b.Has@{i} R) : Map1b.Has@{i} R :=
+    @Map1b.BuildHas A B R
+      (@Map2b.is_right_unique A B R m).
 
-Coercion forgetMap10@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1.Has@{i} R) : Map0.Has@{i} R :=
+Coercion forgetMap2a1c@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i} R) : Map1c.Has@{i} R :=
+    @Map1c.BuildHas A B R
+      (@Map2a.map A B R m).
+
+Coercion forgetMap2b1c@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2b.Has@{i} R) : Map1c.Has@{i} R :=
+    @Map1c.BuildHas A B R
+      (@Map2b.map A B R m).
+
+Coercion forgetMap1c0@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1c.Has@{i} R) : Map0.Has@{i} R :=
+    @Map0.BuildHas A B R.
+
+Coercion forgetMap1b0@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1b.Has@{i} R) : Map0.Has@{i} R :=
+    @Map0.BuildHas A B R.
+
+Coercion forgetMap1a0@{i}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1a.Has@{i} R) : Map0.Has@{i} R :=
     @Map0.BuildHas A B R.
 
 Elpi Accumulate lp:{{
@@ -307,8 +361,14 @@ Elpi Query lp:{{
 Definition rel {A B} (R : Param00.Rel A B) := Param00.R A B R.
 Coercion rel : Param00.Rel >-> Funclass.
 
-Definition map {A B} (R : Param10.Rel A B) : A -> B :=
-  Map1.map _ (Param10.covariant A B R).
+Definition is_total {A B} (R : Param1a0.Rel A B) :
+  forall a, merely (exists b, R a b) :=
+  Map1a.is_total _ (Param1a0.covariant A B R).
+Definition is_right_unique {A B} (R : Param1b0.Rel A B) :
+  forall a b c, R a b -> R a c -> b = c :=
+  Map1b.is_right_unique _ (Param1b0.covariant A B R).
+Definition map {A B} (R : Param1c0.Rel A B) : A -> B :=
+  Map1c.map _ (Param1c0.covariant A B R).
 Definition map_in_R {A B} (R : Param2a0.Rel A B) :
   forall (a : A) (b : B), map R a = b -> R a b :=
   Map2a.map_in_R _ (Param2a0.covariant A B R).
@@ -319,8 +379,14 @@ Definition R_in_mapK {A B} (R : Param40.Rel A B) :
   forall (a : A) (b : B), map_in_R R a b o R_in_map R a b == idmap :=
   Map4.R_in_mapK _ (Param40.covariant A B R).
 
-Definition comap {A B} (R : Param01.Rel A B) : B -> A :=
-  Map1.map _ (Param01.contravariant A B R).
+Definition is_right_total {A B} (R : Param01a.Rel A B) :
+  forall a, merely (exists b, R b a) :=
+  Map1a.is_total _ (Param01a.contravariant A B R).
+Definition is_left_unique {A B} (R : Param01b.Rel A B) :
+  forall a b c, R b a -> R c a -> b = c :=
+  Map1b.is_right_unique _ (Param01b.contravariant A B R).
+Definition comap {A B} (R : Param01c.Rel A B) : B -> A :=
+  Map1c.map _ (Param01c.contravariant A B R).
 Definition comap_in_R {A B} (R : Param02a.Rel A B) :
   forall (b : B) (a : A), comap R b = a -> R a b :=
   Map2a.map_in_R _ (Param02a.contravariant A B R).
@@ -330,6 +396,743 @@ Definition R_in_comap {A B} (R : Param02b.Rel A B) :
 Definition R_in_comapK {A B} (R : Param04.Rel A B) :
   forall (b : B) (a : A), comap_in_R R b a o R_in_comap R b a == idmap :=
   Map4.R_in_mapK _ (Param04.contravariant A B R).
+
+(***************)
+
+Definition R_arrow@{i j}
+  {A A' : Type@{i}} (PA : Param00.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param00.Rel@{j} B B') :=
+    fun f f' => forall a a', PA a a' -> PB (f a) (f' a').
+
+Definition Map0_arrow@{i j k | i <= k, j <= k}
+  {A A' : Type@{i}} (PA : Param00.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param00.Rel@{j} B B') :
+    Map0.Has@{k} (R_arrow PA PB).
+Proof. exists. Defined.
+
+(* (01c, 1c0) -> 1c0 *)
+Definition Map1c_arrow@{i j k | i <= k, j <= k}
+  {A A' : Type@{i}} (PA : Param01c.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param1c0.Rel@{j} B B') :
+    Map1c.Has@{k} (R_arrow PA PB).
+Proof.
+  exists; exact (fun f a' => map PB (f (comap PA a'))).
+Defined.
+
+Section Optimality_Map1c.
+  Definition p01b : Param01b.Rel False Unit.
+  Proof.
+    exists (fun _ _ => Unit) ; exists.
+    move=> _ [].
+  Defined.
+
+  Definition p1c1c_false : Param1c1c.Rel False False.
+  Proof. exists (fun _ _ => Unit) ; by exists. Defined.
+
+  Theorem D1c_arrow_left_gt0: not (
+    forall (A A' : Type) (AR: Param00.Rel A A'),
+    forall (B B' : Type) (BR: Param1c0.Rel B B'),
+
+    Map1c.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs False Unit p01b).
+    specialize (Habs _ _ p1c1c_false).
+    move: Habs => [map].
+    destruct (map id tt).
+  Qed.
+
+  Theorem D1c_arrow_left_isnt_1b: not (
+    forall (A A' : Type) (AR: Param01b.Rel A A'),
+    forall (B B' : Type) (BR: Param1c0.Rel B B'),
+
+    Map1c.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs False Unit p01b).
+    specialize (Habs _ _ p1c1c_false).
+    move: Habs => [map].
+    destruct (map id tt).
+  Qed.
+
+  Definition merely_to_M1a: forall {A: Type},
+    (merely A)
+      ->
+    Map1a.Has (fun (_: Unit) (_: A) => True).
+  Proof.
+    move=> A tr_a.
+    exists=> _.
+    apply (merely_destruct tr_a) => a.
+    apply tr ; by exists a.
+  Defined.
+
+  Definition p2b0_A {A: Type}: Param2b0.Rel A A.
+  Proof.
+    exists (fun a a' => a = a').
+    - exists id.
+      + move=> a b c [] [] //.
+      + done.
+    - exists.
+  Defined.
+
+  From HoTT Require Import Contrib.HoTTBookExercises.
+
+  Theorem D1c_arrow_left_isnt_1a `{Univalence}: not (
+    forall (A A' : Type) (AR: Param01a.Rel A A'),
+    forall (B B' : Type) (BR: Param1c0.Rel B B'),
+
+    Map1c.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    move: (fun {A: Type} (tr_a: merely A) =>
+      let map1a := merely_to_M1a tr_a in
+      let param1a0 := Param01a.BuildRel _ _ _ (Map0.BuildHas _ _ _) map1a in
+      Habs _ _ param1a0 A A p2b0_A
+    ) => {}Habs.
+
+    move: Habs.
+    rewrite /R_arrow /= => Habs.
+
+    pose G A tr_a := Map1c.map _ (Habs A tr_a) id tt.
+
+    elim (Book_3_11 G).
+  Qed.
+
+  Definition p1c1c_unit : Param1c1c.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => Unit) ; by exists.
+  Qed.
+
+  Definition p1b0 : Param1b0.Rel Unit False.
+  Proof.
+    exists (fun _ _ => Unit) ; exists.
+    move=> _ [].
+  Defined.
+  
+  Theorem D1c_arrow_right_is_gt0: not (
+    forall (A A' : Type) (AR: Param01c.Rel A A'),
+    forall (B B' : Type) (BR: Param00.Rel B B'),
+
+    Map1c.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs _ _ p1c1c_unit).
+    specialize (Habs Unit False p1b0).
+    move: Habs => [map].
+    destruct (map id tt).
+  Qed.
+
+  Theorem D1c_arrow_right_isnt_1b: not (
+    forall (A A' : Type) (AR: Param01c.Rel A A'),
+    forall (B B' : Type) (BR: Param1b0.Rel B B'),
+
+    Map1c.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs _ _ p1c1c_unit).
+    specialize (Habs Unit False p1b0).
+    move: Habs => [map].
+    destruct (map id tt).
+  Qed.
+
+  Definition p2b2b_bool : Param2b2b.Rel Bool Bool.
+  Proof.
+    exists (fun b b' => b = b').
+    - exists id.
+      + move=> a b c eq_ba eq_ca.
+        apply inverse in eq_ba.
+        exact (concat eq_ba eq_ca).
+      + move=> a b. done.
+    - exists id.
+      + unfold sym_rel.
+        move=> a b c eq_ba eq_ca.
+        apply inverse in eq_ca.
+        exact (concat eq_ba eq_ca).
+      + move=> a b. done.
+  Defined.
+
+  Theorem D1c_arrow_right_isnt_1a `{Univalence}: not (
+    forall (A A' : Type) (AR: Param01c.Rel A A'),
+    forall (B B' : Type) (BR: Param1a0.Rel B B'),
+
+    Map1c.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    move: (Habs _ _ p2b2b_bool) => {}Habs.
+    move: (fun {A: Type} (tr_a: merely A) =>
+      let map1a := merely_to_M1a tr_a in
+      let param1a0 := Param1a0.BuildRel _ _ _ map1a (Map0.BuildHas _ _ _) in
+      Habs _ _ param1a0
+    ) => {}Habs.
+
+    move: Habs.
+    rewrite /R_arrow /= => Habs.
+
+    pose G A tr_a := Map1c.map _ (Habs A tr_a) (fun _ => tt) true.
+
+    elim (Book_3_11 G).
+  Qed.
+End Optimality_Map1c.
+
+(* (02a, 1b0) -> 1b0 *)
+Definition Map1b_arrow@{i j k | i <= k, j <= k} `{Funext}
+  {A A' : Type@{i}} (PA : Param02a.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param1b0.Rel@{j} B B') :
+    Map1b.Has@{k} (R_arrow PA PB).
+Proof.
+  exists; rewrite /R_arrow.
+  move=> f g h R_fg R_fh.
+  apply: path_arrow.
+  move=> x'.
+  apply (is_right_unique PB (f (comap PA x')) (g x')).
+  - by apply /R_fg /(comap_in_R PA).
+  - by apply /R_fh /(comap_in_R PA).
+Qed.
+
+Section Optimality_Map1b.
+  Definition p02b_false : Param02b.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => False).
+    - exists.
+    - exists id.
+      + move=> _ _ _ [].
+      + move=> _ _ [].
+  Defined.
+
+  Theorem D1b_arrow_left_isnt_2b: not (
+    forall (A A' : Type) (AR: Param02b.Rel A A'),
+    forall (B B' : Type) (BR: Param1b0.Rel B B'),
+
+    Map1b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs _ _ p02b_false).
+    specialize (Habs _ _ p2b2b_bool).
+    move: Habs => [is_right_unique].
+    pose f := unit_name true.
+    pose g := unit_name false.
+    specialize (is_right_unique f f g).
+
+    enough (f = g) by (
+      apply ap10 in X ;
+      specialize (X tt) ;
+      rewrite /f /g in X ;
+      by apply: true_ne_false
+    ).
+
+    apply is_right_unique ; move=> _ _ [].
+  Qed.
+
+  (* Inductive shelter {A: Type} (a: A) :=.
+
+  Definition p1b0_hides_A {A: Type}: Param1b0.Rel A Unit.
+  Proof.
+    exists (fun (a: A) _ => shelter a).
+    - by exists=> a [] [].
+    - exists.
+  Qed. *)
+
+  Theorem D1b_arrow_left_gt1a: not (
+    forall (A A' : Type) (AR: Param01a.Rel A A'),
+    forall (B B' : Type) (BR: Param1b0.Rel B B'),
+
+    Map1b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    (* move=> Habs.
+    move: (fun {A: Type} (tr_a: merely A) =>
+      let map1a := merely_to_M1a tr_a in
+      let param01a := Param01a.BuildRel _ _ _ (Map0.BuildHas _ _ _) map1a in
+      Habs _ _ param01a A Unit p1b0_hides_A
+    ) => {}Habs.
+
+    assert (forall A, merely A -> A).
+    - move=> A tr_a.
+      destruct (Habs A tr_a) as [is_right_unique].
+      specialize (is_right_unique id id id).
+
+    move: Habs.
+    rewrite /R_arrow /= => Habs.
+ *)
+
+  Admitted.
+
+  Definition p02a : Param02a.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => Unit).
+    - exists.
+    - exists id=> a.
+      + apply tr. exists a. by unfold sym_rel.
+      + move=> b _. by unfold sym_rel.
+  Defined.
+
+  Definition p2a0_bool : Param2a0.Rel Bool Bool.
+  Proof.
+    exists (fun b b' => Unit).
+    - exists id.
+      + move=> a. apply tr.
+        by exists a.
+      + done.
+    - exists.
+  Defined.
+
+  Definition p2a2a_true: Param2a2a.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => True).
+    - exists id.
+      + case ; by apply tr.
+      + done.
+    - exists id.
+      + case ; rewrite /sym_rel; by apply tr.
+      + done.
+  Defined.
+
+  Definition p2a2a_A : Param2a2a.Rel Bool Bool.
+  Proof.
+    exists (fun _ _ => Unit).
+    - exists id => b.
+      + apply tr ; by exists b.
+      + done.
+    - exists id => b.
+      + apply tr ; by exists b.
+      + done.
+  Defined.
+
+  Definition p2a2a_bool : Param2a2a.Rel Bool Bool.
+  Proof.
+    exists (fun b b' => b = b').
+    - exists id.
+      + move=> b; apply tr.
+        by exists b.
+      + done.
+    - exists id.
+      + move=> b; apply tr.
+        by exists b.
+      + rewrite /sym_rel //.
+  Defined.
+
+  Theorem D1b_arrow_right_isnt_1a: not (
+    forall (A A' : Type) (AR: Param02a.Rel A A'),
+    forall (B B' : Type) (BR: Param1a0.Rel B B'),
+
+    Map1b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    move: (Habs _ _ p2a2a_true) => {}Habs.
+    move: (Habs _ _ p2a2a_A) => {}Habs.
+    move: Habs => [is_right_unique].
+
+    specialize (is_right_unique (unit_name true) (unit_name false) (unit_name true)).
+    rewrite /R_arrow /p2a2a_true /= in is_right_unique.
+    specialize (is_right_unique (fun _ _ _ => tt) (fun _ _ _ => tt)).
+    destruct (false_ne_true (ap10 is_right_unique tt)).
+  Qed.
+
+  Definition p02a_unit: Param02a.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => Unit).
+    - exists.
+    - exists id.
+      + rewrite /sym_rel => _; apply tr; done.
+      + done.
+  Defined.
+
+  Definition p1c0_unit: Param1c0.Rel Bool Bool.
+  Proof.
+    exists (fun _ _ => Unit).
+    - by exists.
+    - exists.
+  Defined.
+
+  Theorem D1b_arrow_right_isnt_1c: not (
+    forall (A A' : Type) (AR: Param02a.Rel A A'),
+    forall (B B' : Type) (BR: Param1c0.Rel B B'),
+
+    Map1b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    specialize (Habs Unit Unit p02a_unit).
+    specialize (Habs Bool Bool p1c0_unit).
+    move: Habs => [is_right_unique].
+    enough (unit_name true = unit_name false) by apply true_ne_false, (ap10 X tt).
+    apply (is_right_unique (unit_name true)) ; rewrite /R_arrow /p02a_unit /p1c0_unit //.
+  Qed.
+End Optimality_Map1b.
+
+(* (02b, 2a0) -> 1a0 *)
+Definition Map1a_arrow@{i j k | i <= k, j <= k}
+  {A A' : Type@{i}} (PA : Param02b.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param2a0.Rel@{j} B B') :
+    Map1a.Has@{k} (R_arrow PA PB).
+Proof.
+  exists; rewrite /R_arrow => f.
+
+  apply tr.
+  exists (fun a' => map PB (f (comap PA a'))).
+  move=> a a' aR.
+  apply (map_in_R PB).
+  by rewrite (R_in_comap PA a' a).
+Qed.
+
+Section Optimality_Map1a.
+  Definition p02a_bool_bool_id: Param02a.Rel Bool Bool.
+  Proof.
+    exists (fun b b' => True).
+    - exists.
+    - exists id.
+      + move=> b ; apply tr ; by exists b.
+      + rewrite /sym_rel /id => [] [] //.
+  Defined.
+
+  Definition p2a0_bool_bool_negb: Param2a0.Rel Bool Bool.
+  Proof.
+    exists (fun b b' => b = b').
+    - exists id.
+      + move=> b ; apply tr ; by exists b.
+      + rewrite /sym_rel //.
+    - exists.
+  Defined.
+
+  Theorem D1a_arrow_left_isnt_2a: not (
+    forall (A A' : Type) (AR: Param02a.Rel A A'),
+    forall (B B' : Type) (BR: Param2a0.Rel B B'),
+
+    Map1a.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs _ _ p02a_bool_bool_id).
+    specialize (Habs _ _ p2a0_bool_bool_negb).
+    move: Habs => [is_total].
+    apply (merely_destruct (is_total id)) => {is_total}.
+    move => [b is_total].
+    rewrite /R_arrow /p02a_bool_bool_id /p2a0_bool_bool_negb /= in is_total.
+    specialize (is_total true true I) as X.
+    rewrite -(is_total false true I) in X.
+    apply (true_ne_false X).
+  Qed.
+
+  Definition p2b2b_true : Param2b2b.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => Unit) ;
+    exists id => [] [] [] [] ; done.
+  Defined.
+
+  Definition p01b_false : Param01b.Rel False Unit.
+  Proof.
+    exists (fun _ _ => Unit) ;
+    exists => [] [] [].
+  Defined.
+
+  Definition p2a0_empty_R: Param2a0.Rel False False.
+  Proof.
+    exists (fun _ _ => False).
+    - by exists id.
+    - exists.
+  Qed.
+
+  Theorem D1a_arrow_left_is_gt1b: not (
+    forall (A A' : Type) (AR: Param01b.Rel A A'),
+    forall (B B' : Type) (BR: Param2a0.Rel B B'),
+
+    Map1a.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    specialize (Habs _ _ p01b_false).
+    specialize (Habs _ _ p2a0_empty_R).
+    move: Habs => [is_total].
+    specialize (is_total id).
+    apply (merely_destruct is_total).
+    move => [b _] ; destruct (b tt).
+  Qed.
+
+  Definition p2b2b_empty_R : Param2b2b.Rel Unit Unit.
+  Proof.
+    exists (fun _ _ => False) ;
+    exists id => [] [] [] [] ; done.
+  Defined.
+
+  Theorem D1a_arrow_right_isnt_2b: not (
+    forall (A A' : Type) (AR: Param02b.Rel A A'),
+    forall (B B' : Type) (BR: Param2b0.Rel B B'),
+
+    Map1a.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    specialize (Habs _ _ p2b2b_true).
+    specialize (Habs _ _ p2b2b_empty_R).
+    move: Habs => [is_total].
+    apply (merely_destruct (is_total id)).
+    move => [b Ra].
+    rewrite /R_arrow /p2b2b_empty_R /= in Ra.
+    destruct (Ra tt tt tt).
+  Qed.
+
+  Theorem D1a_arrow_right_is_gt1a: not (
+    forall (A A' : Type) (AR: Param02b.Rel A A'),
+    forall (B B' : Type) (BR: Param1a0.Rel B B'),
+
+    Map1a.Has (R_arrow AR BR)
+  ).
+  Proof.
+  Admitted.
+End Optimality_Map1a.
+
+(* (02b, 2a0) -> 2a0 *)
+Definition Map2a_arrow@{i j k | i <= k, j <= k}
+  {A A' : Type@{i}} (PA : Param02b.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param2a0.Rel@{j} B B') :
+    Map2a.Has@{k} (R_arrow PA PB).
+Proof.
+  exists (Map1c.map@{k} _ (Map1c_arrow PA PB)).
+  - move=> f; apply tr.
+    exists (fun a' => map PB (f (comap PA a'))).
+    move=> a a' aR.
+    rewrite (R_in_comap PA a' a aR).
+    apply (map_in_R PB) => //.
+  - move=> f f' /= e a a' aR; apply (map_in_R PB).
+    apply (transport (fun t => _ = t a') e) => /=.
+    by apply (transport (fun t => _ = map _ (f t)) (R_in_comap PA _ _ aR)^).
+Defined.
+
+Section Optimality_Map2a.
+  Theorem D2a_arrow_right_isnt_2b: not (
+      forall (A A' : Type) (AR: Param02b.Rel A A'),
+      forall (B B' : Type) (BR: Param2b0.Rel B B'),
+
+      Map2a.Has (R_arrow AR BR)
+    ).
+  Proof.
+    intro Habs.
+    specialize (Habs Unit Unit p2b2b_true).
+    specialize (Habs Unit Unit p2b2b_empty_R).
+    move: Habs => [is_total map R_in_map].
+
+    move: (R_in_map id (map id) idpath).
+    move=> H; move: {H}(H tt tt) => H.
+    rewrite /p2b2b_true /p2b2b_empty_R /= in H.
+    case: (H tt).
+  Qed.
+
+  From HoTT Require Import Contrib.HoTTBookExercises.
+
+  Theorem D2a_arrow_right_isnt_1a `{Univalence}: not (
+    forall (A A' : Type) (AR: Param02b.Rel A A'),
+    forall (B B' : Type) (BR: Param1a0.Rel B B'),
+
+    Map2a.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    move: (Habs _ _ p2b2b_bool) => {}Habs.
+    move: (fun {A: Type} (tr_a: merely A) =>
+      let map1a := merely_to_M1a tr_a in
+      let param1a0 := Param1a0.BuildRel _ _ _ map1a (Map0.BuildHas _ _ _) in
+      Habs _ _ param1a0
+    ) => {}Habs.
+
+    move: Habs.
+    rewrite /R_arrow /= => Habs.
+
+    pose G A tr_a := Map2a.map _ (Habs A tr_a) (fun _ => tt) true.
+
+    elim (Book_3_11 G).
+  Qed.
+
+  Theorem D2a_arrow_left_isnt_2a: not (
+      forall (A A' : Type) (AR: Param02a.Rel A A'),
+      forall (B B' : Type) (BR: Param2a0.Rel B B'),
+
+      Map2a.Has (R_arrow AR BR)
+    ).
+  Proof.
+    intro Habs.
+    specialize (Habs Bool Bool p2a2a_A).
+    specialize (Habs Bool Bool p2a2a_bool).
+    move: Habs => [is_total map map_in_R].
+
+    move: (map_in_R id (map id) idpath) => H.
+    rewrite /R_arrow /p2a2a_A /p2a2a_bool /= in H.
+
+    assert (forall b, b = map id false) as Habs
+    by (move=> b; apply (H b false tt)).
+
+    specialize (Habs true) as Htrue.
+    move: (Habs false); move=> Hfalse.
+    rewrite -Hfalse in Htrue => {Hfalse}.
+    destruct (true_ne_false Htrue).
+  Qed.
+
+  Theorem D2a_arrow_left_isnt_1b: not (
+      forall (A A' : Type) (AR: Param01b.Rel A A'),
+      forall (B B' : Type) (BR: Param2a0.Rel B B'),
+
+      Map2a.Has (R_arrow AR BR)
+    ).
+  Proof.
+    intro Habs.
+    specialize (Habs False Unit p01b).
+    specialize (Habs _ _ p2a0_empty_R).
+    move: Habs => [is_total _ _].
+    specialize (is_total id).
+    apply (merely_destruct is_total).
+    move=> [b _] ; destruct (b tt).
+  Qed.
+End Optimality_Map2a.
+
+(* (02a, 2b0) + funext -> 2b0 *)
+Definition Map2b_arrow@{i j k | i <= k, j <= k} `{Funext}
+  {A A' : Type@{i}} (PA : Param02a.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param2b0.Rel@{j} B B') :
+    Map2b.Has@{k} (R_arrow PA PB).
+Proof.
+  exists (Map1c.map@{k} _ (Map1c_arrow PA PB)).
+  - move=> f g h Rfg Rfh.
+    apply path_forall=> x.
+    rewrite -(R_in_map PB (f (comap PA x)) (h x)).
+    + rewrite -(R_in_map PB (f (comap PA x)) (g x)) //.
+      apply Rfg, (comap_in_R PA) => //.
+    + apply Rfh, (comap_in_R PA) => //.
+  - move=> f f' /= fR; apply path_forall => a'.
+    by apply (R_in_map PB); apply fR; apply (comap_in_R PA).
+Defined.
+
+Section Optimality_Map2b.
+  Theorem D2b_arrow_right_isnt_2a: not (
+    forall (A A' : Type) (AR: Param02a.Rel A A'),
+    forall (B B' : Type) (BR: Param2a0.Rel B B'),
+
+    Map2b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    intro Habs.
+    specialize (Habs Unit Unit p2a2a_true).
+    specialize (Habs Bool Bool p2a2a_A).
+    move: Habs => [_ map map_in_R].
+
+    assert (forall f g, map f = g) as Habs
+    by (move=> f g ; apply map_in_R => //).
+
+    have X := Habs (unit_name true) (unit_name true).
+    rewrite (Habs (unit_name true) (unit_name false)) in X.
+    destruct (false_ne_true (ap10 X tt)).
+  Qed.
+
+  Definition p1b0_unit_false : Param1b0.Rel Unit False.
+  Proof.
+    exists (fun _ _ => True).
+    - exists=> _ []. 
+    - exists.
+  Defined.
+
+  Theorem D2b_arrow_right_isnt_1b: not (
+    forall (A A' : Type) (AR: Param02a.Rel A A'),
+    forall (B B' : Type) (BR: Param1b0.Rel B B'),
+
+    Map2b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    specialize (Habs _ _ p2a2a_true).
+    specialize (Habs _ _ p1b0_unit_false).
+    move: Habs => [_ map R_in_map].
+    destruct (map id tt).
+  Qed.
+
+  From HoTT Require Import Contrib.HoTTBookExercises.
+
+  Theorem D2b_arrow_left_isnt_1a `{Univalence}: not (
+    forall (A A' : Type) (AR: Param01a.Rel A A'),
+    forall (B B' : Type) (BR: Param2b0.Rel B B'),
+
+    Map2b.Has (R_arrow AR BR)
+  ).
+  Proof.
+    move=> Habs.
+    move: (fun {A: Type} (tr_a: merely A) =>
+      let map1a := merely_to_M1a tr_a in
+      let param01a := Param01a.BuildRel _ _ _ (Map0.BuildHas _ _ _) map1a in
+      Habs _ _ param01a A A p2b0_A
+    ) => {}Habs.
+
+    move: Habs.
+    rewrite /R_arrow /= => Habs.
+
+    pose G A tr_a := Map2b.map _ (Habs A tr_a) id tt.
+
+    elim (Book_3_11 G).
+  Qed.
+End Optimality_Map2b.
+
+(* (03, 30) + funext -> 30 *)
+Definition Map3_arrow@{i j k | i <= k, j <= k} `{Funext}
+  {A A' : Type@{i}} (PA : Param03.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param30.Rel@{j} B B') :
+    Map3.Has@{k} (R_arrow PA PB).
+Proof.
+  exists (Map1c.map@{k} _ (Map1c_arrow PA PB)).
+  - move=> f g h Rfg Rfh.
+    apply path_forall=> x.
+    rewrite -(R_in_map PB (f (comap PA x)) (h x)).
+    + rewrite -(R_in_map PB (f (comap PA x)) (g x)) //.
+      apply Rfg, (comap_in_R PA) => //.
+    + apply Rfh, (comap_in_R PA) => //.
+  - move=> f; apply tr.
+    exists (fun a' => map PB (f (comap PA a'))).
+    move=> a a' aR.
+    rewrite (R_in_comap PA a' a aR).
+    apply (map_in_R PB) => //.
+  - exact: (Map2a.map_in_R _ (Map2a_arrow PA PB)).
+  - move=> f f' /= fR; apply path_arrow => a'.
+    by apply (R_in_map PB); apply fR; apply (comap_in_R PA).
+Defined.
+
+(* (04, 40) + funext -> 40 *)
+Definition Map4_arrow@{i j k | i <= k, j <= k} `{Funext}
+  {A A' : Type@{i}} (PA : Param04.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param40.Rel@{j} B B') :
+    Map4.Has@{k} (R_arrow PA PB).
+Proof.
+  exists
+    (Map1c.map@{k} _ (Map1c_arrow PA PB))
+    (Map2a.map_in_R _ (Map2a_arrow PA PB))
+    (Map2b.R_in_map _ (Map2b_arrow PA PB)).
+  - move=> f g h Rfg Rfh.
+    apply path_forall=> x.
+    rewrite -(R_in_map PB (f (comap PA x)) (h x)).
+    + rewrite -(R_in_map PB (f (comap PA x)) (g x)) //.
+      apply Rfg, (comap_in_R PA) => //.
+    + apply Rfh, (comap_in_R PA) => //.
+  - move=> f; apply tr.
+    exists (fun a' => map PB (f (comap PA a'))).
+    move=> a a' aR.
+    rewrite (R_in_comap PA a' a aR).
+    apply (map_in_R PB) => //.
+  - move=> f f' fR /=.
+    apply path_forall@{i k k} => a.
+    apply path_forall@{i k k} => a'.
+    apply path_arrow@{i k k} => aR /=.
+    rewrite -[in X in _ = X](R_in_comapK PA a' a aR).
+    elim (R_in_comap PA a' a aR).
+    rewrite transport_apD10 /=.
+    rewrite apD10_path_forall_cancel/=.
+    rewrite <- (R_in_mapK PB).
+    by elim: (R_in_map _ _ _ _).
+Defined.
+
+(***************)
+
 
 (* Aliasing *)
 
@@ -354,26 +1157,40 @@ Proof.
   move=> RR' []; exists.
 Defined.
 
+Definition eq_Map0a@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+  (forall a a', R a a' <~> R' a a') ->
+  Map0a.Has@{i} R' -> Map0a.Has@{i} R.
+Proof.
+  move=> RR' [Sm Pa]; exists Sm. exact.
+Defined.
+
+Definition eq_Map0b@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+  (forall a a', R a a' <~> R' a a') ->
+  Map0b.Has@{i} R' -> Map0b.Has@{i} R.
+Proof.
+  move=> RR' [Sm Pb]; exists Sm. exact.
+Defined.
+
 Definition eq_Map1@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
   (forall a a', R a a' <~> R' a a') ->
   Map1.Has@{i} R' -> Map1.Has@{i} R.
 Proof.
-  move=> RR' [m]; exists. exact.
+  move=> RR' [Sm Pa Pb m SmR]; exists Sm m ; exact.
 Defined.
 
 Definition eq_Map2a@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
   (forall a a', R a a' <~> R' a a') ->
   Map2a.Has@{i} R' -> Map2a.Has@{i} R.
 Proof.
-  move=> RR' [m mR]; exists m.
-  move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
+  move=> RR' [Sm Pa Pb m SmR mR] ; exists Sm m ; try exact.
+  - move=> a b /mR /(RR' _ _)^-1%equiv; exact.
 Defined.
 
 Definition eq_Map2b@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
   (forall a a', R a a' <~> R' a a') ->
   Map2b.Has@{i} R' -> Map2b.Has@{i} R.
 Proof.
-  move=> RR' [m Rm]; unshelve eexists m.
+  move=> RR' [Sm Pa Pb m SmR Rm]. unshelve eexists Sm m ; try exact.
   - move=> a' b /(RR' _ _)/Rm; exact.
 Defined.
 
@@ -381,7 +1198,7 @@ Definition eq_Map3@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
   (forall a a', R a a' <~> R' a a') ->
   Map3.Has@{i} R' -> Map3.Has@{i} R.
 Proof.
-  move=> RR' [m mR Rm]; unshelve eexists m.
+  move=> RR' [Sm Pa Pb m SmR mR Rm]; unshelve eexists Sm m ; try exact.
   - move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
   - move=> a' b /(RR' _ _)/Rm; exact.
 Defined.
@@ -390,7 +1207,7 @@ Definition eq_Map4@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
   (forall a a', R a a' <~> R' a a') ->
   Map4.Has@{i} R' -> Map4.Has@{i} R.
 Proof.
-move=> RR' [m mR Rm RmK]; unshelve eexists m _ _.
+move=> RR' [Sm Pa Pb m SmR mR Rm RmK]; unshelve eexists Sm m _ _ ; try exact.
 - move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
 - move=> a' b /(RR' _ _)/Rm; exact.
 - by move=> a' b r /=; rewrite RmK [_^-1%function _]equiv_funK.
@@ -420,16 +1237,20 @@ Defined.
 
 Lemma umap_equiv_sigma (A B : Type@{i}) (R : A -> B -> Type@{i}) :
   IsUMap R <~>
+    { mapR : A -> B -> Type@{i} |
+    { is_right_unique : forall a b c, mapR a b -> mapR a c -> b = c |
+    { is_total : forall a, merely (exists b, mapR a b) |
     { map : A -> B |
+    { mapR_is_map : forall a b, map a = b <-> mapR a b |
     { mR : forall (a : A) (b : B), map a = b -> R a b |
     { Rm : forall (a : A) (b : B), R a b -> map a = b |
-      forall (a : A) (b : B), mR a b o Rm a b == idmap } } }.
+      forall (a : A) (b : B), mR a b o Rm a b == idmap } } } } } } }.
 Proof. by symmetry; issig. Defined.
 
 Lemma umap_equiv_isfun `{Funext} {A B : Type@{i}}
   (R : A -> B -> Type@{i}) : IsUMap R <~> IsFun R.
 Proof.
-apply (equiv_composeR' (umap_equiv_sigma _ _ R)).
+(* apply (equiv_composeR' (umap_equiv_sigma _ _ R)).
 transitivity (forall x : A, {y : B & {r : R x y & forall yr', (y; r) = yr'}});
 last first. {
   apply equiv_functor_forall_id => a.
@@ -437,7 +1258,7 @@ last first. {
   apply equiv_sigma_assoc'.
 }
 apply (equiv_compose' (equiv_sig_coind _ _)).
-apply equiv_functor_sigma_id => map.
+apply equiv_functor_sigma_id => _ _ _ map.
 apply (equiv_compose' (equiv_sig_coind _ _)).
 apply (equiv_composeR' (equiv_sigma_symm _)).
 transitivity {f : forall x, R x (map x) &
@@ -505,7 +1326,8 @@ unshelve eapply equiv_functor_sigma.
   move=> r; apply path_forall => a; apply path_forall => b.
   by apply path_arrow; elim.
 - by move=> mR; unshelve econstructor.
-Defined.
+Defined. *)
+Admitted.
 
 Lemma uparam_equiv `{Univalence} {A B : Type} : (A <=> B) <~> (A <~> B).
 Proof.
@@ -517,11 +1339,34 @@ unshelve eapply equiv_adjointify.
 - by move=> [R mR msR]; rewrite !equiv_funK.
 Defined.
 
-Definition id_umap {A : Type} : IsUMap (@paths A) :=
-  MkUMap idmap (fun a b r => r) (fun a b r => r) (fun a b r => 1%path).
+Definition id_umap {A : Type} : IsUMap (@paths A).
+Proof.
+  unshelve eexists.
+  - move=> a b ; exact (a = b).
+  - rewrite /id //.
+  - rewrite /id //.
+  - rewrite /id //.
+  - move=> a b c /= [] //.
+  - move=> a; apply: tr.
+    by exists a.
+  - rewrite /id //.
+  - rewrite /id //.
+Qed.
 
-Definition id_sym_umap {A : Type} : IsUMap (sym_rel (@paths A)) :=
-  MkUMap idmap (fun a b r => r^) (fun a b r => r^) (fun a b r => inv_V r).
+Definition id_sym_umap {A : Type} : IsUMap (sym_rel (@paths A)).
+Proof.
+  unshelve eexists.
+  - move=> a b ; exact (a = b).
+  - rewrite /sym_rel /id //.
+  - rewrite /sym_rel /id //.
+  - rewrite /sym_rel /id //.
+  - move=> a b c /= [] //.
+  - move=> a; apply: tr.
+    by exists a.
+  - rewrite /sym_rel /id //.
+  - rewrite /sym_rel /id.
+    move=> a b r. apply inv_V.
+Qed.
 
 Definition id_uparam {A : Type} : A <=> A :=
   MkUParam id_umap id_sym_umap.
@@ -540,84 +1385,101 @@ Defined.
 
 Lemma uparam_equiv_id `{Univalence} A :
   uparam_equiv (@id_uparam A) = equiv_idmap.
-Proof. exact: path_equiv. Defined.
+(* Proof. exact: path_equiv. Defined. *)
+Admitted.
 
 (* instances of MapN for A = A *)
 (* allows to build id_ParamMN : forall A, ParamMN.Rel A A *)
 
 Definition id_Map0 {A : Type} : Map0.Has (@paths A).
-Proof. constructor. Defined.
+Proof.
+  constructor.
+  move=> _ _; exact True.
+Defined.
 
 Definition id_Map0_sym {A : Type} : Map0.Has (sym_rel (@paths A)).
-Proof. constructor. Defined.
+Proof.
+  constructor.
+  move=> _ _; exact True.
+Defined.
 
 Definition id_Map1 {A : Type} : Map1.Has (@paths A).
-Proof. constructor. exact idmap. Defined.
+Proof.
+Admitted.
 
 Definition id_Map1_sym {A : Type} : Map1.Has (sym_rel (@paths A)).
-Proof. constructor. exact idmap. Defined.
+(* Proof. constructor. exact idmap. Defined. *)
+Admitted.
 
 Definition id_Map2a {A : Type} : Map2a.Has (@paths A).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun a b e => e).
-Defined.
+Defined. *)
 
 Definition id_Map2a_sym {A : Type} : Map2a.Has (sym_rel (@paths A)).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
-Defined.
+Defined. *)
 
 Definition id_Map2b {A : Type} : Map2b.Has (@paths A).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun a b e => e).
-Defined.
+Defined. *)
 
 Definition id_Map2b_sym {A : Type} : Map2b.Has (sym_rel (@paths A)).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
-Defined.
+Defined. *)
 
 Definition id_Map3 {A : Type} : Map3.Has (@paths A).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun a b e => e).
   - exact (fun a b e => e).
-Defined.
+Defined. *)
 
 Definition id_Map3_sym {A : Type} : Map3.Has (sym_rel (@paths A)).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
   - exact (fun A B e => e^).
-Defined.
+Defined. *)
 
 Definition id_Map4 {A : Type} : Map4.Has (@paths A).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun a b e => e).
   - exact (fun a b e => e).
   - exact (fun a b e => 1%path).
-Defined.
+Defined. *)
 
 Definition id_Map4_sym {A : Type} : Map4.Has (sym_rel (@paths A)).
 Proof.
-  unshelve econstructor.
+Admitted.
+  (* unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
   - exact (fun A B e => e^).
   - exact (fun A B e => inv_V e).
-Defined.
+Defined. *)
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
 
@@ -641,7 +1503,7 @@ Elpi Accumulate lp:{{
 }}.
 Elpi Typecheck.
 
-Elpi Query lp:{{
+(* Elpi Query lp:{{
   coq.univ.new U,
   coq.univ.variable U L,
   map-classes all Classes,
@@ -650,7 +1512,7 @@ Elpi Query lp:{{
       generate-id-param (pc m n) U L
     )
   ).
-}}.
+}}. *)
 
 (* Check id_Param00. *)
 (* Check id_Param32b. *)

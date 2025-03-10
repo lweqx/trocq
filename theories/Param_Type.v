@@ -14,7 +14,7 @@
 From elpi Require Import elpi.
 From Coq Require Import ssreflect.
 From HoTT Require Import HoTT.
-Require Import HoTT_additions Hierarchy Database.
+From Trocq Require Import HoTT_additions Hierarchy Database.
 From Trocq.Elpi Extra Dependency "util.elpi" as util.
 From Trocq.Elpi Extra Dependency "param-class.elpi" as param_class.
 
@@ -28,7 +28,7 @@ Local Open Scope param_scope.
   for all N P, for M = map2a and below (above, NP is always 44)
   + symmetry MapM_Type_symNP *)
 
-Elpi Command genmaptype.
+(* Elpi Command genmaptype.
 Elpi Accumulate File util.
 Elpi Accumulate Db trocq.db.
 Elpi Accumulate File param_class.
@@ -100,7 +100,7 @@ Elpi Query lp:{{
       )
     )
   ).
-}}.
+}}. *)
 
 (* Check Map0_Type01.
 Check Map1_Type_sym32b.
@@ -112,11 +112,22 @@ Check Map2a_Type44. *)
  * Map*.Has is a constant so it currently cannot be instantiated with an algebraic universe
  *)
 
+
+
 Definition Map2b_Type44@{i j | i < j} `{Univalence} :
   @Map2b.Has@{j} Type@{i} Type@{i} Param44.Rel@{i}.
 Proof.
   unshelve econstructor.
+  - exact (fun t1 t2 => t1 = t2).
   - exact idmap.
+  - move=> a b c /= eq_ab eq_ac.
+    transitivity a.
+    + apply (inverse eq_ab).
+    + assumption. 
+  - move=> a.
+    apply tr.
+    exists a ; reflexivity.
+  - rewrite //.
   - move=> A B /uparam_equiv. apply: path_universe_uncurried.
 Defined.
 

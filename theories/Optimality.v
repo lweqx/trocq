@@ -35,12 +35,7 @@ Proof.
 Defined.
 
 Definition p10_false : Param10.Rel False False.
-Proof.
-  exists (fun _ _ => Unit).
-  - exists.
-    exact (fun f => f).
-  - exists.
-Defined.
+Proof. exists (fun _ _ => Unit) ; by exists. Defined.
 
 Theorem D1_arrow_left_is_gt0: not (
     forall (A A' : Type) (AR: Param00.Rel A A'),
@@ -50,7 +45,7 @@ Theorem D1_arrow_left_is_gt0: not (
   ).
 Proof.
   intro Habs.
-  specialize (Habs False Unit  (p00 _ _)).
+  specialize (Habs False Unit (p00 _ _)).
   specialize (Habs _ _ p10_false).
   destruct Habs as [R Req].
   pose m := Param10.map _ _ R.
