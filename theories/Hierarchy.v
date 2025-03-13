@@ -42,6 +42,74 @@ Register paths as trocq.paths.
 (* Parametricity Classes *)
 (*************************)
 
+Definition is_epic {A B: Type} (f: A -> B) :=
+  forall (C: Type) (g1 g2: B -> C), g1 o f = g2 o f -> g1 = g2.
+
+Lemma epic_implies_merely_surj `{Univalence} {A B: Type} (f: A -> B):
+  is_epic f -> forall b, merely (exists a, f a = b).
+Proof.
+  move=> f_is_epic.
+
+  set g1 := fun (_: B) => True.
+  set g2 := fun (b: B) => merely (exists a, f a = b).
+  have := f_is_epic _ g1 g2 => H' b.
+
+  assert (g1 o f = g2 o f).
+  - apply path_forall=> x.
+    rewrite /g1 /g2.
+    apply equiv_path_universe.
+    unshelve apply /equiv_adjointify.
+    + move=> _; apply tr.
+      by exists x.
+    + done.
+    + move=> t ; apply path_ishprop.
+    + by case.
+  - have := ap10 (H' X) b.
+    rewrite /g1 /g2.
+    by case: _ /.
+Qed.
+
+Definition compose_rel@{i} {A B C: Type@{i}} (Q: B -> C -> Type@{i}) (R: A -> B -> Type@{i}) : A -> C -> Type@{i} :=
+  fun a c => exists b, R a b /\ Q b c.
+Notation "R 'oR' Q" := (compose_rel R Q).
+
+Definition is_rel_epic@{i j | i < j} {A B: Type@{i}} (R: A -> B -> Type@{i}) :=
+  forall (C: Type@{i}) (g1 g2: B -> C -> Type@{i}), g1 oR R = g2 oR R -> g1 = g2.
+
+Lemma epic_rel_implies_total `{Univalence} {A B: Type} (R: A -> B -> Type):
+  is_rel_epic R -> forall b, merely (exists a, R a b).
+Proof.
+  move=> R_is_epic.
+
+  set g1 := fun (_: B) (_: Unit) => True.
+  set g2 := fun (b: B) (_: Unit) => merely (exists a, R a b).
+  have := R_is_epic _ g1 g2 => H' b.
+
+  assert (g1 oR R = g2 oR R).
+  - apply path_forall=> x.
+    rewrite /g1 /g2 /compose_rel.
+    apply path_forall; case.
+    apply equiv_path_universe.
+    unshelve apply /equiv_adjointify.
+    + move=> [b0 [r _]].
+      exists b0.
+      split ; [exact r |].
+      apply tr.
+      by exists x.
+    + move=> [b0 [r _]].
+      exists b0.
+      by split.
+    + move=> [b0 [r mer]].
+      have := path_ishprop (tr (x; r)) mer.
+      by case: _ /.
+    + move=> [b0 [r t]].
+      by case t.
+  - have := ap10 (H' X) b.
+    rewrite /g1 /g2.
+    move=> eq.
+    by case: _ / (ap10 eq).
+Qed.
+
 (* first unilateral witnesses describing one side of the structure given to a relation *)
 
 Module Map0.
@@ -50,8 +118,9 @@ Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
 End Map0.
 
 Module Map1a.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_total : forall a, merely (exists b, R a b)
+Record Has@{i j} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_total : is_rel_epic@{i j} (sym_rel R)
+  (* is_total : forall a, merely (exists b, R a b) *)
 }.
 End Map1a.
 
@@ -68,8 +137,8 @@ Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
 End Map1c.
 
 Module Map2a.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_total : forall a, merely (exists b, R a b);
+Record Has@{i j} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_total : is_rel_epic@{i j} (sym_rel R);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b
 }.
@@ -84,9 +153,9 @@ Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
 End Map2b.
 
 Module Map3.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i j} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_total : is_rel_epic@{i j} (sym_rel R);
   is_right_unique : forall a b c, R a b -> R a c -> b = c;
-  is_total : forall a, merely (exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b
@@ -96,9 +165,9 @@ End Map3.
 Module Map4.
 (* An alternative presentation of Sozeau, Tabareau, Tanter's univalent parametricity:
    symmetrical and transport-free *)
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i j} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+  is_total : is_rel_epic@{i j} (sym_rel R);
   is_right_unique : forall a b c, R a b -> R a c -> b = c;
-  is_total : forall a, merely (exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b;
@@ -146,7 +215,7 @@ Elpi Typecheck.
 (* Record Hierarchy *)
 (********************)
 
-Elpi Accumulate lp:{{
+(* Elpi Accumulate lp:{{
   % generate a module with a record type containing:
   % - a relation R : A -> B -> Type;
   % - a covariant (A to B) instance of one of the classes of Map listed above;
@@ -170,7 +239,7 @@ Elpi Accumulate lp:{{
             field [] "covariant" (app [pglobal CovariantSubRecord UI, a, b, r]) _\
             field [] "contravariant"
               (app [pglobal ContravariantSubRecord UI, b, a, app [pglobal SymRel UI, a, b, r]]) (_\
-          end-record)))),
+          end Map0.-record)))),
     @primitive! => @udecl! [L] ff [] ff => coq.env.add-indt RelDecl TrocqInd,coq.env.indt TrocqInd _ _ _ _ [TrocqBuild] _,
     Rel = indt TrocqInd,
     coq.env.projections TrocqInd
@@ -217,35 +286,495 @@ Elpi Accumulate lp:{{
 }}.
 Elpi Typecheck.
 
+(* generate the hierarchy *)
+Elpi Query lp:{{
+  coq.univ.new U,
+  coq.univ.variable U L,
+  map-classes all Classes,
+  std.forall Classes (m\
+    std.forall Classes (n\
+      generate-module (pc m n) U L
+    )
+  ).
+}}. *)
+
+Module Param00.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+  End Param00.
+
+Module Param01a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param01a.
+
+Module Param01b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param01b.
+
+Module Param01c.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param01c.
+
+Module Param02b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param02b.
+
+Module Param02a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param02a.
+
+Module Param03.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param03.
+
+Module Param04.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map0.Has@{u} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param04.
+
+Module Param1c0.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param1c0.
+
+Module Param1c1a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param1c1a.
+
+Module Param1c1b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param1c1b.
+
+Module Param1c1c.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param1c1c.
+
+Module Param1c2b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param1c2b.
+
+Module Param1c2a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param1c2a.
+
+Module Param1c3.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param1c3.
+
+Module Param1c4.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1c.Has@{u} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param1c4.
+
+Module Param1a0.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param1a0.
+
+Module Param1a1a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param1a1a.
+
+Module Param1a1b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param1a1b.
+
+Module Param1a1c.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param1a1c.
+
+Module Param1a2b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param1a2b.
+
+Module Param1a2a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param1a2a.
+
+Module Param1a3.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param1a3.
+
+Module Param1a4.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1a.Has@{u v} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param1a4.
+
+Module Param1b0.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param1b0.
+
+Module Param1b1a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param1b1a.
+
+Module Param1b1b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param1b1b.
+
+Module Param1b1c.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param1b1c.
+
+Module Param1b2b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param1b2b.
+
+Module Param1b2a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param1b2a.
+
+Module Param1b3.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param1b3.
+
+Module Param1b4.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map1b.Has@{u} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param1b4.
+
+Module Param2a0.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param2a0.
+
+Module Param2a1a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param2a1a.
+
+Module Param2a1b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param2a1b.
+
+Module Param2a1c.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param2a1c.
+
+Module Param2a2b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param2a2b.
+
+Module Param2a2a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param2a2a.
+
+Module Param2a3.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param2a3.
+
+Module Param2a4.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2a.Has@{u v} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param2a4.
+
+Module Param2b0.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param2b0.
+
+Module Param2b1a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param2b1a.
+
+Module Param2b1b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param2b1b.
+
+Module Param2b1c.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param2b1c.
+
+Module Param2b2b.
+	 Record Rel@{u} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param2b2b.
+
+Module Param2b2a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param2b2a.
+
+Module Param2b3.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param2b3.
+
+Module Param2b4.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map2b.Has@{u} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param2b4.
+
+Module Param30.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param30.
+
+Module Param31a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param31a.
+
+Module Param31b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param31b.
+
+Module Param31c.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param31c.
+
+Module Param32b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param32b.
+
+Module Param32a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param32a.
+
+Module Param33.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param33.
+
+Module Param34.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map3.Has@{u v} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param34.
+
+Module Param40.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map0.Has@{u} (sym_rel@{u} R) }.
+   End Param40.
+
+Module Param41a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map1a.Has@{u v} (sym_rel@{u} R) }.
+   End Param41a.
+
+Module Param41b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map1b.Has@{u} (sym_rel@{u} R) }.
+   End Param41b.
+
+Module Param41c.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map1c.Has@{u} (sym_rel@{u} R) }.
+   End Param41c.
+
+Module Param42b.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map2b.Has@{u} (sym_rel@{u} R) }.
+   End Param42b.
+
+Module Param42a.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map2a.Has@{u v} (sym_rel@{u} R) }.
+   End Param42a.
+
+Module Param43.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map3.Has@{u v} (sym_rel@{u} R) }.
+   End Param43.
+
+Module Param44.
+	 Record Rel@{u v} (A B : Type@{u}) := BuildRel
+       { R : A -> B -> Type@{u};
+         covariant : Map4.Has@{u v} R;
+         contravariant : Map4.Has@{u v} (sym_rel@{u} R) }.
+   End Param44.
+
 (********************)
 (* Record Weakening *)
 (********************)
 
-Coercion forgetMap43@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map4.Has@{i} R) : Map3.Has@{i} R :=
+Coercion forgetMap43@{i j}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map4.Has@{i j} R) : Map3.Has@{i j} R :=
     @Map3.BuildHas A B R
-      (@Map4.is_right_unique A B R m)
       (@Map4.is_total A B R m)
+      (@Map4.is_right_unique A B R m)
       (@Map4.map A B R m)
       (@Map4.map_in_R A B R m)
       (@Map4.R_in_map A B R m).
 
-Coercion forgetMap32a@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i} R) : Map2a.Has@{i} R :=
+Coercion forgetMap32a@{i j}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i j} R) : Map2a.Has@{i j} R :=
     @Map2a.BuildHas A B R
       (@Map3.is_total A B R m)
       (@Map3.map A B R m)
       (@Map3.map_in_R A B R m).
 
-Coercion forgetMap32b@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i} R) : Map2b.Has@{i} R :=
+Coercion forgetMap32b@{i j}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i j} R) : Map2b.Has@{i} R :=
     @Map2b.BuildHas A B R
       (@Map3.is_right_unique A B R m)
       (@Map3.map A B R m)
       (@Map3.R_in_map A B R m).
 
-Coercion forgetMap2a1a@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i} R) : Map1a.Has@{i} R :=
+Coercion forgetMap2a1a@{i j}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i j} R) : Map1a.Has@{i j} R :=
     @Map1a.BuildHas A B R
       (@Map2a.is_total A B R m).
 
@@ -254,8 +783,8 @@ Coercion forgetMap2b1b@{i}
     @Map1b.BuildHas A B R
       (@Map2b.is_right_unique A B R m).
 
-Coercion forgetMap2a1c@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i} R) : Map1c.Has@{i} R :=
+Coercion forgetMap2a1c@{i j}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i j} R) : Map1c.Has@{i} R :=
     @Map1c.BuildHas A B R
       (@Map2a.map A B R m).
 
@@ -272,11 +801,11 @@ Coercion forgetMap1b0@{i}
   {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1b.Has@{i} R) : Map0.Has@{i} R :=
     @Map0.BuildHas A B R.
 
-Coercion forgetMap1a0@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1a.Has@{i} R) : Map0.Has@{i} R :=
+Coercion forgetMap1a0@{i j}
+  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1a.Has@{i j} R) : Map0.Has@{i} R :=
     @Map0.BuildHas A B R.
 
-Elpi Accumulate lp:{{
+(* Elpi Accumulate lp:{{
   % generate 2 functions of weakening per possible weakening:
   % one on the left and one on the right, if possible
   pred generate-forget i:param-class, i:univ, i:univ.variable.
@@ -330,18 +859,6 @@ Elpi Accumulate lp:{{
 }}.
 Elpi Typecheck.
 
-(* generate the hierarchy *)
-Elpi Query lp:{{
-  coq.univ.new U,
-  coq.univ.variable U L,
-  map-classes all Classes,
-  std.forall Classes (m\
-    std.forall Classes (n\
-      generate-module (pc m n) U L
-    )
-  ).
-}}.
-
 Elpi Query lp:{{
   coq.univ.new U,
   coq.univ.variable U L,
@@ -351,7 +868,1607 @@ Elpi Query lp:{{
       generate-forget (pc m n) U L
     )
   ).
-}}.
+}}. *)
+
+Coercion forget_01a_00@{u v} :=
+fun (A B : Type@{u}) (P : Param01a.Rel@{u v} A B) =>
+{|
+  Param00.R := Param01a.R@{u v} A B P;
+  Param00.covariant := Param01a.covariant@{u v} A B P;
+  Param00.contravariant := Param01a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_01b_00@{u} :=
+fun (A B : Type@{u}) (P : Param01b.Rel@{u} A B) =>
+{|
+  Param00.R := Param01b.R@{u} A B P;
+  Param00.covariant := Param01b.covariant@{u} A B P;
+  Param00.contravariant := Param01b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_01c_00@{u} :=
+fun (A B : Type@{u}) (P : Param01c.Rel@{u} A B) =>
+{|
+  Param00.R := Param01c.R@{u} A B P;
+  Param00.covariant := Param01c.covariant@{u} A B P;
+  Param00.contravariant := Param01c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_02a_01a@{u v} :=
+fun (A B : Type@{u}) (P : Param02a.Rel@{u v} A B) =>
+{|
+  Param01a.R := Param02a.R@{u v} A B P;
+  Param01a.covariant := Param02a.covariant@{u v} A B P;
+  Param01a.contravariant := Param02a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_02a_01c@{u v} :=
+fun (A B : Type@{u}) (P : Param02a.Rel@{u v} A B) =>
+{|
+  Param01c.R := Param02a.R@{u v} A B P;
+  Param01c.covariant := Param02a.covariant@{u v} A B P;
+  Param01c.contravariant := Param02a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_02b_01b@{u} :=
+fun (A B : Type@{u}) (P : Param02b.Rel@{u} A B) =>
+{|
+  Param01b.R := Param02b.R@{u} A B P;
+  Param01b.covariant := Param02b.covariant@{u} A B P;
+  Param01b.contravariant := Param02b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_02b_01c@{u} :=
+fun (A B : Type@{u}) (P : Param02b.Rel@{u} A B) =>
+{|
+  Param01c.R := Param02b.R@{u} A B P;
+  Param01c.covariant := Param02b.covariant@{u} A B P;
+  Param01c.contravariant := Param02b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_03_02a@{u v} :=
+fun (A B : Type@{u}) (P : Param03.Rel@{u v} A B) =>
+{|
+  Param02a.R := Param03.R@{u v} A B P;
+  Param02a.covariant := Param03.covariant@{u v} A B P;
+  Param02a.contravariant := Param03.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_03_02b@{u v} :=
+fun (A B : Type@{u}) (P : Param03.Rel@{u v} A B) =>
+{|
+  Param02b.R := Param03.R@{u v} A B P;
+  Param02b.covariant := Param03.covariant@{u v} A B P;
+  Param02b.contravariant := Param03.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_04_03@{u v} :=
+fun (A B : Type@{u}) (P : Param04.Rel@{u v} A B) =>
+{|
+  Param03.R := Param04.R@{u v} A B P;
+  Param03.covariant := Param04.covariant@{u v} A B P;
+  Param03.contravariant := Param04.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a0_00@{u v} :=
+fun (A B : Type@{u}) (P : Param1a0.Rel@{u v} A B) =>
+{|
+  Param00.R := Param1a0.R@{u v} A B P;
+  Param00.covariant := Param1a0.covariant@{u v} A B P;
+  Param00.contravariant := Param1a0.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a1a_01a@{u v} :=
+fun (A B : Type@{u}) (P : Param1a1a.Rel@{u v} A B) =>
+{|
+  Param01a.R := Param1a1a.R@{u v} A B P;
+  Param01a.covariant := Param1a1a.covariant@{u v} A B P;
+  Param01a.contravariant := Param1a1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a1a_1a0@{u v} :=
+fun (A B : Type@{u}) (P : Param1a1a.Rel@{u v} A B) =>
+{|
+  Param1a0.R := Param1a1a.R@{u v} A B P;
+  Param1a0.covariant := Param1a1a.covariant@{u v} A B P;
+  Param1a0.contravariant := Param1a1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a1b_01b@{u v} :=
+fun (A B : Type@{u}) (P : Param1a1b.Rel@{u v} A B) =>
+{|
+  Param01b.R := Param1a1b.R@{u v} A B P;
+  Param01b.covariant := Param1a1b.covariant@{u v} A B P;
+  Param01b.contravariant := Param1a1b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a1b_1a0@{u v} :=
+fun (A B : Type@{u}) (P : Param1a1b.Rel@{u v} A B) =>
+{|
+  Param1a0.R := Param1a1b.R@{u v} A B P;
+  Param1a0.covariant := Param1a1b.covariant@{u v} A B P;
+  Param1a0.contravariant := Param1a1b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a1c_01c@{u v} :=
+fun (A B : Type@{u}) (P : Param1a1c.Rel@{u v} A B) =>
+{|
+  Param01c.R := Param1a1c.R@{u v} A B P;
+  Param01c.covariant := Param1a1c.covariant@{u v} A B P;
+  Param01c.contravariant := Param1a1c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a1c_1a0@{u v} :=
+fun (A B : Type@{u}) (P : Param1a1c.Rel@{u v} A B) =>
+{|
+  Param1a0.R := Param1a1c.R@{u v} A B P;
+  Param1a0.covariant := Param1a1c.covariant@{u v} A B P;
+  Param1a0.contravariant := Param1a1c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a2a_02a@{u v} :=
+fun (A B : Type@{u}) (P : Param1a2a.Rel@{u v} A B) =>
+{|
+  Param02a.R := Param1a2a.R@{u v} A B P;
+  Param02a.covariant := Param1a2a.covariant@{u v} A B P;
+  Param02a.contravariant := Param1a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a2a_1a1a@{u v} :=
+fun (A B : Type@{u}) (P : Param1a2a.Rel@{u v} A B) =>
+{|
+  Param1a1a.R := Param1a2a.R@{u v} A B P;
+  Param1a1a.covariant := Param1a2a.covariant@{u v} A B P;
+  Param1a1a.contravariant := Param1a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a2a_1a1c@{u v} :=
+fun (A B : Type@{u}) (P : Param1a2a.Rel@{u v} A B) =>
+{|
+  Param1a1c.R := Param1a2a.R@{u v} A B P;
+  Param1a1c.covariant := Param1a2a.covariant@{u v} A B P;
+  Param1a1c.contravariant := Param1a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a2b_02b@{u v} :=
+fun (A B : Type@{u}) (P : Param1a2b.Rel@{u v} A B) =>
+{|
+  Param02b.R := Param1a2b.R@{u v} A B P;
+  Param02b.covariant := Param1a2b.covariant@{u v} A B P;
+  Param02b.contravariant := Param1a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a2b_1a1b@{u v} :=
+fun (A B : Type@{u}) (P : Param1a2b.Rel@{u v} A B) =>
+{|
+  Param1a1b.R := Param1a2b.R@{u v} A B P;
+  Param1a1b.covariant := Param1a2b.covariant@{u v} A B P;
+  Param1a1b.contravariant := Param1a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a2b_1a1c@{u v} :=
+fun (A B : Type@{u}) (P : Param1a2b.Rel@{u v} A B) =>
+{|
+  Param1a1c.R := Param1a2b.R@{u v} A B P;
+  Param1a1c.covariant := Param1a2b.covariant@{u v} A B P;
+  Param1a1c.contravariant := Param1a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a3_03@{u v} :=
+fun (A B : Type@{u}) (P : Param1a3.Rel@{u v} A B) =>
+{|
+  Param03.R := Param1a3.R@{u v} A B P;
+  Param03.covariant := Param1a3.covariant@{u v} A B P;
+  Param03.contravariant := Param1a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a3_1a2a@{u v} :=
+fun (A B : Type@{u}) (P : Param1a3.Rel@{u v} A B) =>
+{|
+  Param1a2a.R := Param1a3.R@{u v} A B P;
+  Param1a2a.covariant := Param1a3.covariant@{u v} A B P;
+  Param1a2a.contravariant := Param1a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a3_1a2b@{u v} :=
+fun (A B : Type@{u}) (P : Param1a3.Rel@{u v} A B) =>
+{|
+  Param1a2b.R := Param1a3.R@{u v} A B P;
+  Param1a2b.covariant := Param1a3.covariant@{u v} A B P;
+  Param1a2b.contravariant := Param1a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a4_04@{u v} :=
+fun (A B : Type@{u}) (P : Param1a4.Rel@{u v} A B) =>
+{|
+  Param04.R := Param1a4.R@{u v} A B P;
+  Param04.covariant := Param1a4.covariant@{u v} A B P;
+  Param04.contravariant := Param1a4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1a4_1a3@{u v} :=
+fun (A B : Type@{u}) (P : Param1a4.Rel@{u v} A B) =>
+{|
+  Param1a3.R := Param1a4.R@{u v} A B P;
+  Param1a3.covariant := Param1a4.covariant@{u v} A B P;
+  Param1a3.contravariant := Param1a4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b0_00@{u} :=
+fun (A B : Type@{u}) (P : Param1b0.Rel@{u} A B) =>
+{|
+  Param00.R := Param1b0.R@{u} A B P;
+  Param00.covariant := Param1b0.covariant@{u} A B P;
+  Param00.contravariant := Param1b0.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b1a_01a@{u v} :=
+fun (A B : Type@{u}) (P : Param1b1a.Rel@{u v} A B) =>
+{|
+  Param01a.R := Param1b1a.R@{u v} A B P;
+  Param01a.covariant := Param1b1a.covariant@{u v} A B P;
+  Param01a.contravariant := Param1b1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b1a_1b0@{u v} :=
+fun (A B : Type@{u}) (P : Param1b1a.Rel@{u v} A B) =>
+{|
+  Param1b0.R := Param1b1a.R@{u v} A B P;
+  Param1b0.covariant := Param1b1a.covariant@{u v} A B P;
+  Param1b0.contravariant := Param1b1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b1b_01b@{u} :=
+fun (A B : Type@{u}) (P : Param1b1b.Rel@{u} A B) =>
+{|
+  Param01b.R := Param1b1b.R@{u} A B P;
+  Param01b.covariant := Param1b1b.covariant@{u} A B P;
+  Param01b.contravariant := Param1b1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b1b_1b0@{u} :=
+fun (A B : Type@{u}) (P : Param1b1b.Rel@{u} A B) =>
+{|
+  Param1b0.R := Param1b1b.R@{u} A B P;
+  Param1b0.covariant := Param1b1b.covariant@{u} A B P;
+  Param1b0.contravariant := Param1b1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b1c_01c@{u} :=
+fun (A B : Type@{u}) (P : Param1b1c.Rel@{u} A B) =>
+{|
+  Param01c.R := Param1b1c.R@{u} A B P;
+  Param01c.covariant := Param1b1c.covariant@{u} A B P;
+  Param01c.contravariant := Param1b1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b1c_1b0@{u} :=
+fun (A B : Type@{u}) (P : Param1b1c.Rel@{u} A B) =>
+{|
+  Param1b0.R := Param1b1c.R@{u} A B P;
+  Param1b0.covariant := Param1b1c.covariant@{u} A B P;
+  Param1b0.contravariant := Param1b1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b2a_02a@{u v} :=
+fun (A B : Type@{u}) (P : Param1b2a.Rel@{u v} A B) =>
+{|
+  Param02a.R := Param1b2a.R@{u v} A B P;
+  Param02a.covariant := Param1b2a.covariant@{u v} A B P;
+  Param02a.contravariant := Param1b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b2a_1b1a@{u v} :=
+fun (A B : Type@{u}) (P : Param1b2a.Rel@{u v} A B) =>
+{|
+  Param1b1a.R := Param1b2a.R@{u v} A B P;
+  Param1b1a.covariant := Param1b2a.covariant@{u v} A B P;
+  Param1b1a.contravariant := Param1b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b2a_1b1c@{u v} :=
+fun (A B : Type@{u}) (P : Param1b2a.Rel@{u v} A B) =>
+{|
+  Param1b1c.R := Param1b2a.R@{u v} A B P;
+  Param1b1c.covariant := Param1b2a.covariant@{u v} A B P;
+  Param1b1c.contravariant := Param1b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b2b_02b@{u} :=
+fun (A B : Type@{u}) (P : Param1b2b.Rel@{u} A B) =>
+{|
+  Param02b.R := Param1b2b.R@{u} A B P;
+  Param02b.covariant := Param1b2b.covariant@{u} A B P;
+  Param02b.contravariant := Param1b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b2b_1b1b@{u} :=
+fun (A B : Type@{u}) (P : Param1b2b.Rel@{u} A B) =>
+{|
+  Param1b1b.R := Param1b2b.R@{u} A B P;
+  Param1b1b.covariant := Param1b2b.covariant@{u} A B P;
+  Param1b1b.contravariant := Param1b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b2b_1b1c@{u} :=
+fun (A B : Type@{u}) (P : Param1b2b.Rel@{u} A B) =>
+{|
+  Param1b1c.R := Param1b2b.R@{u} A B P;
+  Param1b1c.covariant := Param1b2b.covariant@{u} A B P;
+  Param1b1c.contravariant := Param1b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1b3_03@{u v} :=
+fun (A B : Type@{u}) (P : Param1b3.Rel@{u v} A B) =>
+{|
+  Param03.R := Param1b3.R@{u v} A B P;
+  Param03.covariant := Param1b3.covariant@{u v} A B P;
+  Param03.contravariant := Param1b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b3_1b2a@{u v} :=
+fun (A B : Type@{u}) (P : Param1b3.Rel@{u v} A B) =>
+{|
+  Param1b2a.R := Param1b3.R@{u v} A B P;
+  Param1b2a.covariant := Param1b3.covariant@{u v} A B P;
+  Param1b2a.contravariant := Param1b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b3_1b2b@{u v} :=
+fun (A B : Type@{u}) (P : Param1b3.Rel@{u v} A B) =>
+{|
+  Param1b2b.R := Param1b3.R@{u v} A B P;
+  Param1b2b.covariant := Param1b3.covariant@{u v} A B P;
+  Param1b2b.contravariant := Param1b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b4_04@{u v} :=
+fun (A B : Type@{u}) (P : Param1b4.Rel@{u v} A B) =>
+{|
+  Param04.R := Param1b4.R@{u v} A B P;
+  Param04.covariant := Param1b4.covariant@{u v} A B P;
+  Param04.contravariant := Param1b4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1b4_1b3@{u v} :=
+fun (A B : Type@{u}) (P : Param1b4.Rel@{u v} A B) =>
+{|
+  Param1b3.R := Param1b4.R@{u v} A B P;
+  Param1b3.covariant := Param1b4.covariant@{u v} A B P;
+  Param1b3.contravariant := Param1b4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c0_00@{u} :=
+fun (A B : Type@{u}) (P : Param1c0.Rel@{u} A B) =>
+{|
+  Param00.R := Param1c0.R@{u} A B P;
+  Param00.covariant := Param1c0.covariant@{u} A B P;
+  Param00.contravariant := Param1c0.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c1a_01a@{u v} :=
+fun (A B : Type@{u}) (P : Param1c1a.Rel@{u v} A B) =>
+{|
+  Param01a.R := Param1c1a.R@{u v} A B P;
+  Param01a.covariant := Param1c1a.covariant@{u v} A B P;
+  Param01a.contravariant := Param1c1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c1a_1c0@{u v} :=
+fun (A B : Type@{u}) (P : Param1c1a.Rel@{u v} A B) =>
+{|
+  Param1c0.R := Param1c1a.R@{u v} A B P;
+  Param1c0.covariant := Param1c1a.covariant@{u v} A B P;
+  Param1c0.contravariant := Param1c1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c1b_01b@{u} :=
+fun (A B : Type@{u}) (P : Param1c1b.Rel@{u} A B) =>
+{|
+  Param01b.R := Param1c1b.R@{u} A B P;
+  Param01b.covariant := Param1c1b.covariant@{u} A B P;
+  Param01b.contravariant := Param1c1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c1b_1c0@{u} :=
+fun (A B : Type@{u}) (P : Param1c1b.Rel@{u} A B) =>
+{|
+  Param1c0.R := Param1c1b.R@{u} A B P;
+  Param1c0.covariant := Param1c1b.covariant@{u} A B P;
+  Param1c0.contravariant := Param1c1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c1c_01c@{u} :=
+fun (A B : Type@{u}) (P : Param1c1c.Rel@{u} A B) =>
+{|
+  Param01c.R := Param1c1c.R@{u} A B P;
+  Param01c.covariant := Param1c1c.covariant@{u} A B P;
+  Param01c.contravariant := Param1c1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c1c_1c0@{u} :=
+fun (A B : Type@{u}) (P : Param1c1c.Rel@{u} A B) =>
+{|
+  Param1c0.R := Param1c1c.R@{u} A B P;
+  Param1c0.covariant := Param1c1c.covariant@{u} A B P;
+  Param1c0.contravariant := Param1c1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c2a_02a@{u v} :=
+fun (A B : Type@{u}) (P : Param1c2a.Rel@{u v} A B) =>
+{|
+  Param02a.R := Param1c2a.R@{u v} A B P;
+  Param02a.covariant := Param1c2a.covariant@{u v} A B P;
+  Param02a.contravariant := Param1c2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c2a_1c1a@{u v} :=
+fun (A B : Type@{u}) (P : Param1c2a.Rel@{u v} A B) =>
+{|
+  Param1c1a.R := Param1c2a.R@{u v} A B P;
+  Param1c1a.covariant := Param1c2a.covariant@{u v} A B P;
+  Param1c1a.contravariant := Param1c2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c2a_1c1c@{u v} :=
+fun (A B : Type@{u}) (P : Param1c2a.Rel@{u v} A B) =>
+{|
+  Param1c1c.R := Param1c2a.R@{u v} A B P;
+  Param1c1c.covariant := Param1c2a.covariant@{u v} A B P;
+  Param1c1c.contravariant := Param1c2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c2b_02b@{u} :=
+fun (A B : Type@{u}) (P : Param1c2b.Rel@{u} A B) =>
+{|
+  Param02b.R := Param1c2b.R@{u} A B P;
+  Param02b.covariant := Param1c2b.covariant@{u} A B P;
+  Param02b.contravariant := Param1c2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c2b_1c1b@{u} :=
+fun (A B : Type@{u}) (P : Param1c2b.Rel@{u} A B) =>
+{|
+  Param1c1b.R := Param1c2b.R@{u} A B P;
+  Param1c1b.covariant := Param1c2b.covariant@{u} A B P;
+  Param1c1b.contravariant := Param1c2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c2b_1c1c@{u} :=
+fun (A B : Type@{u}) (P : Param1c2b.Rel@{u} A B) =>
+{|
+  Param1c1c.R := Param1c2b.R@{u} A B P;
+  Param1c1c.covariant := Param1c2b.covariant@{u} A B P;
+  Param1c1c.contravariant := Param1c2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_1c3_03@{u v} :=
+fun (A B : Type@{u}) (P : Param1c3.Rel@{u v} A B) =>
+{|
+  Param03.R := Param1c3.R@{u v} A B P;
+  Param03.covariant := Param1c3.covariant@{u v} A B P;
+  Param03.contravariant := Param1c3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c3_1c2a@{u v} :=
+fun (A B : Type@{u}) (P : Param1c3.Rel@{u v} A B) =>
+{|
+  Param1c2a.R := Param1c3.R@{u v} A B P;
+  Param1c2a.covariant := Param1c3.covariant@{u v} A B P;
+  Param1c2a.contravariant := Param1c3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c3_1c2b@{u v} :=
+fun (A B : Type@{u}) (P : Param1c3.Rel@{u v} A B) =>
+{|
+  Param1c2b.R := Param1c3.R@{u v} A B P;
+  Param1c2b.covariant := Param1c3.covariant@{u v} A B P;
+  Param1c2b.contravariant := Param1c3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c4_04@{u v} :=
+fun (A B : Type@{u}) (P : Param1c4.Rel@{u v} A B) =>
+{|
+  Param04.R := Param1c4.R@{u v} A B P;
+  Param04.covariant := Param1c4.covariant@{u v} A B P;
+  Param04.contravariant := Param1c4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_1c4_1c3@{u v} :=
+fun (A B : Type@{u}) (P : Param1c4.Rel@{u v} A B) =>
+{|
+  Param1c3.R := Param1c4.R@{u v} A B P;
+  Param1c3.covariant := Param1c4.covariant@{u v} A B P;
+  Param1c3.contravariant := Param1c4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a0_1a0@{u v} :=
+fun (A B : Type@{u}) (P : Param2a0.Rel@{u v} A B) =>
+{|
+  Param1a0.R := Param2a0.R@{u v} A B P;
+  Param1a0.covariant := Param2a0.covariant@{u v} A B P;
+  Param1a0.contravariant := Param2a0.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a0_1c0@{u v} :=
+fun (A B : Type@{u}) (P : Param2a0.Rel@{u v} A B) =>
+{|
+  Param1c0.R := Param2a0.R@{u v} A B P;
+  Param1c0.covariant := Param2a0.covariant@{u v} A B P;
+  Param1c0.contravariant := Param2a0.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1a_1a1a@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1a.Rel@{u v} A B) =>
+{|
+  Param1a1a.R := Param2a1a.R@{u v} A B P;
+  Param1a1a.covariant := Param2a1a.covariant@{u v} A B P;
+  Param1a1a.contravariant := Param2a1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1a_1c1a@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1a.Rel@{u v} A B) =>
+{|
+  Param1c1a.R := Param2a1a.R@{u v} A B P;
+  Param1c1a.covariant := Param2a1a.covariant@{u v} A B P;
+  Param1c1a.contravariant := Param2a1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1a_2a0@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1a.Rel@{u v} A B) =>
+{|
+  Param2a0.R := Param2a1a.R@{u v} A B P;
+  Param2a0.covariant := Param2a1a.covariant@{u v} A B P;
+  Param2a0.contravariant := Param2a1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1b_1a1b@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1b.Rel@{u v} A B) =>
+{|
+  Param1a1b.R := Param2a1b.R@{u v} A B P;
+  Param1a1b.covariant := Param2a1b.covariant@{u v} A B P;
+  Param1a1b.contravariant := Param2a1b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1b_1c1b@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1b.Rel@{u v} A B) =>
+{|
+  Param1c1b.R := Param2a1b.R@{u v} A B P;
+  Param1c1b.covariant := Param2a1b.covariant@{u v} A B P;
+  Param1c1b.contravariant := Param2a1b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1b_2a0@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1b.Rel@{u v} A B) =>
+{|
+  Param2a0.R := Param2a1b.R@{u v} A B P;
+  Param2a0.covariant := Param2a1b.covariant@{u v} A B P;
+  Param2a0.contravariant := Param2a1b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1c_1a1c@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1c.Rel@{u v} A B) =>
+{|
+  Param1a1c.R := Param2a1c.R@{u v} A B P;
+  Param1a1c.covariant := Param2a1c.covariant@{u v} A B P;
+  Param1a1c.contravariant := Param2a1c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1c_1c1c@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1c.Rel@{u v} A B) =>
+{|
+  Param1c1c.R := Param2a1c.R@{u v} A B P;
+  Param1c1c.covariant := Param2a1c.covariant@{u v} A B P;
+  Param1c1c.contravariant := Param2a1c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a1c_2a0@{u v} :=
+fun (A B : Type@{u}) (P : Param2a1c.Rel@{u v} A B) =>
+{|
+  Param2a0.R := Param2a1c.R@{u v} A B P;
+  Param2a0.covariant := Param2a1c.covariant@{u v} A B P;
+  Param2a0.contravariant := Param2a1c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2a_1a2a@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2a.Rel@{u v} A B) =>
+{|
+  Param1a2a.R := Param2a2a.R@{u v} A B P;
+  Param1a2a.covariant := Param2a2a.covariant@{u v} A B P;
+  Param1a2a.contravariant := Param2a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2a_1c2a@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2a.Rel@{u v} A B) =>
+{|
+  Param1c2a.R := Param2a2a.R@{u v} A B P;
+  Param1c2a.covariant := Param2a2a.covariant@{u v} A B P;
+  Param1c2a.contravariant := Param2a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2a_2a1a@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2a.Rel@{u v} A B) =>
+{|
+  Param2a1a.R := Param2a2a.R@{u v} A B P;
+  Param2a1a.covariant := Param2a2a.covariant@{u v} A B P;
+  Param2a1a.contravariant := Param2a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2a_2a1c@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2a.Rel@{u v} A B) =>
+{|
+  Param2a1c.R := Param2a2a.R@{u v} A B P;
+  Param2a1c.covariant := Param2a2a.covariant@{u v} A B P;
+  Param2a1c.contravariant := Param2a2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2b_1a2b@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2b.Rel@{u v} A B) =>
+{|
+  Param1a2b.R := Param2a2b.R@{u v} A B P;
+  Param1a2b.covariant := Param2a2b.covariant@{u v} A B P;
+  Param1a2b.contravariant := Param2a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2b_1c2b@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2b.Rel@{u v} A B) =>
+{|
+  Param1c2b.R := Param2a2b.R@{u v} A B P;
+  Param1c2b.covariant := Param2a2b.covariant@{u v} A B P;
+  Param1c2b.contravariant := Param2a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2b_2a1b@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2b.Rel@{u v} A B) =>
+{|
+  Param2a1b.R := Param2a2b.R@{u v} A B P;
+  Param2a1b.covariant := Param2a2b.covariant@{u v} A B P;
+  Param2a1b.contravariant := Param2a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a2b_2a1c@{u v} :=
+fun (A B : Type@{u}) (P : Param2a2b.Rel@{u v} A B) =>
+{|
+  Param2a1c.R := Param2a2b.R@{u v} A B P;
+  Param2a1c.covariant := Param2a2b.covariant@{u v} A B P;
+  Param2a1c.contravariant := Param2a2b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a3_1a3@{u v} :=
+fun (A B : Type@{u}) (P : Param2a3.Rel@{u v} A B) =>
+{|
+  Param1a3.R := Param2a3.R@{u v} A B P;
+  Param1a3.covariant := Param2a3.covariant@{u v} A B P;
+  Param1a3.contravariant := Param2a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a3_1c3@{u v} :=
+fun (A B : Type@{u}) (P : Param2a3.Rel@{u v} A B) =>
+{|
+  Param1c3.R := Param2a3.R@{u v} A B P;
+  Param1c3.covariant := Param2a3.covariant@{u v} A B P;
+  Param1c3.contravariant := Param2a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a3_2a2a@{u v} :=
+fun (A B : Type@{u}) (P : Param2a3.Rel@{u v} A B) =>
+{|
+  Param2a2a.R := Param2a3.R@{u v} A B P;
+  Param2a2a.covariant := Param2a3.covariant@{u v} A B P;
+  Param2a2a.contravariant := Param2a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a3_2a2b@{u v} :=
+fun (A B : Type@{u}) (P : Param2a3.Rel@{u v} A B) =>
+{|
+  Param2a2b.R := Param2a3.R@{u v} A B P;
+  Param2a2b.covariant := Param2a3.covariant@{u v} A B P;
+  Param2a2b.contravariant := Param2a3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a4_1a4@{u v} :=
+fun (A B : Type@{u}) (P : Param2a4.Rel@{u v} A B) =>
+{|
+  Param1a4.R := Param2a4.R@{u v} A B P;
+  Param1a4.covariant := Param2a4.covariant@{u v} A B P;
+  Param1a4.contravariant := Param2a4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a4_1c4@{u v} :=
+fun (A B : Type@{u}) (P : Param2a4.Rel@{u v} A B) =>
+{|
+  Param1c4.R := Param2a4.R@{u v} A B P;
+  Param1c4.covariant := Param2a4.covariant@{u v} A B P;
+  Param1c4.contravariant := Param2a4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2a4_2a3@{u v} :=
+fun (A B : Type@{u}) (P : Param2a4.Rel@{u v} A B) =>
+{|
+  Param2a3.R := Param2a4.R@{u v} A B P;
+  Param2a3.covariant := Param2a4.covariant@{u v} A B P;
+  Param2a3.contravariant := Param2a4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b0_1b0@{u} :=
+fun (A B : Type@{u}) (P : Param2b0.Rel@{u} A B) =>
+{|
+  Param1b0.R := Param2b0.R@{u} A B P;
+  Param1b0.covariant := Param2b0.covariant@{u} A B P;
+  Param1b0.contravariant := Param2b0.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b0_1c0@{u} :=
+fun (A B : Type@{u}) (P : Param2b0.Rel@{u} A B) =>
+{|
+  Param1c0.R := Param2b0.R@{u} A B P;
+  Param1c0.covariant := Param2b0.covariant@{u} A B P;
+  Param1c0.contravariant := Param2b0.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b1a_1b1a@{u v} :=
+fun (A B : Type@{u}) (P : Param2b1a.Rel@{u v} A B) =>
+{|
+  Param1b1a.R := Param2b1a.R@{u v} A B P;
+  Param1b1a.covariant := Param2b1a.covariant@{u v} A B P;
+  Param1b1a.contravariant := Param2b1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b1a_1c1a@{u v} :=
+fun (A B : Type@{u}) (P : Param2b1a.Rel@{u v} A B) =>
+{|
+  Param1c1a.R := Param2b1a.R@{u v} A B P;
+  Param1c1a.covariant := Param2b1a.covariant@{u v} A B P;
+  Param1c1a.contravariant := Param2b1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b1a_2b0@{u v} :=
+fun (A B : Type@{u}) (P : Param2b1a.Rel@{u v} A B) =>
+{|
+  Param2b0.R := Param2b1a.R@{u v} A B P;
+  Param2b0.covariant := Param2b1a.covariant@{u v} A B P;
+  Param2b0.contravariant := Param2b1a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b1b_1b1b@{u} :=
+fun (A B : Type@{u}) (P : Param2b1b.Rel@{u} A B) =>
+{|
+  Param1b1b.R := Param2b1b.R@{u} A B P;
+  Param1b1b.covariant := Param2b1b.covariant@{u} A B P;
+  Param1b1b.contravariant := Param2b1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b1b_1c1b@{u} :=
+fun (A B : Type@{u}) (P : Param2b1b.Rel@{u} A B) =>
+{|
+  Param1c1b.R := Param2b1b.R@{u} A B P;
+  Param1c1b.covariant := Param2b1b.covariant@{u} A B P;
+  Param1c1b.contravariant := Param2b1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b1b_2b0@{u} :=
+fun (A B : Type@{u}) (P : Param2b1b.Rel@{u} A B) =>
+{|
+  Param2b0.R := Param2b1b.R@{u} A B P;
+  Param2b0.covariant := Param2b1b.covariant@{u} A B P;
+  Param2b0.contravariant := Param2b1b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b1c_1b1c@{u} :=
+fun (A B : Type@{u}) (P : Param2b1c.Rel@{u} A B) =>
+{|
+  Param1b1c.R := Param2b1c.R@{u} A B P;
+  Param1b1c.covariant := Param2b1c.covariant@{u} A B P;
+  Param1b1c.contravariant := Param2b1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b1c_1c1c@{u} :=
+fun (A B : Type@{u}) (P : Param2b1c.Rel@{u} A B) =>
+{|
+  Param1c1c.R := Param2b1c.R@{u} A B P;
+  Param1c1c.covariant := Param2b1c.covariant@{u} A B P;
+  Param1c1c.contravariant := Param2b1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b1c_2b0@{u} :=
+fun (A B : Type@{u}) (P : Param2b1c.Rel@{u} A B) =>
+{|
+  Param2b0.R := Param2b1c.R@{u} A B P;
+  Param2b0.covariant := Param2b1c.covariant@{u} A B P;
+  Param2b0.contravariant := Param2b1c.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b2a_1b2a@{u v} :=
+fun (A B : Type@{u}) (P : Param2b2a.Rel@{u v} A B) =>
+{|
+  Param1b2a.R := Param2b2a.R@{u v} A B P;
+  Param1b2a.covariant := Param2b2a.covariant@{u v} A B P;
+  Param1b2a.contravariant := Param2b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b2a_1c2a@{u v} :=
+fun (A B : Type@{u}) (P : Param2b2a.Rel@{u v} A B) =>
+{|
+  Param1c2a.R := Param2b2a.R@{u v} A B P;
+  Param1c2a.covariant := Param2b2a.covariant@{u v} A B P;
+  Param1c2a.contravariant := Param2b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b2a_2b1a@{u v} :=
+fun (A B : Type@{u}) (P : Param2b2a.Rel@{u v} A B) =>
+{|
+  Param2b1a.R := Param2b2a.R@{u v} A B P;
+  Param2b1a.covariant := Param2b2a.covariant@{u v} A B P;
+  Param2b1a.contravariant := Param2b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b2a_2b1c@{u v} :=
+fun (A B : Type@{u}) (P : Param2b2a.Rel@{u v} A B) =>
+{|
+  Param2b1c.R := Param2b2a.R@{u v} A B P;
+  Param2b1c.covariant := Param2b2a.covariant@{u v} A B P;
+  Param2b1c.contravariant := Param2b2a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b2b_1b2b@{u} :=
+fun (A B : Type@{u}) (P : Param2b2b.Rel@{u} A B) =>
+{|
+  Param1b2b.R := Param2b2b.R@{u} A B P;
+  Param1b2b.covariant := Param2b2b.covariant@{u} A B P;
+  Param1b2b.contravariant := Param2b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b2b_1c2b@{u} :=
+fun (A B : Type@{u}) (P : Param2b2b.Rel@{u} A B) =>
+{|
+  Param1c2b.R := Param2b2b.R@{u} A B P;
+  Param1c2b.covariant := Param2b2b.covariant@{u} A B P;
+  Param1c2b.contravariant := Param2b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b2b_2b1b@{u} :=
+fun (A B : Type@{u}) (P : Param2b2b.Rel@{u} A B) =>
+{|
+  Param2b1b.R := Param2b2b.R@{u} A B P;
+  Param2b1b.covariant := Param2b2b.covariant@{u} A B P;
+  Param2b1b.contravariant := Param2b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b2b_2b1c@{u} :=
+fun (A B : Type@{u}) (P : Param2b2b.Rel@{u} A B) =>
+{|
+  Param2b1c.R := Param2b2b.R@{u} A B P;
+  Param2b1c.covariant := Param2b2b.covariant@{u} A B P;
+  Param2b1c.contravariant := Param2b2b.contravariant@{u} A B P
+|}
+.
+
+
+Coercion forget_2b3_1b3@{u v} :=
+fun (A B : Type@{u}) (P : Param2b3.Rel@{u v} A B) =>
+{|
+  Param1b3.R := Param2b3.R@{u v} A B P;
+  Param1b3.covariant := Param2b3.covariant@{u v} A B P;
+  Param1b3.contravariant := Param2b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b3_1c3@{u v} :=
+fun (A B : Type@{u}) (P : Param2b3.Rel@{u v} A B) =>
+{|
+  Param1c3.R := Param2b3.R@{u v} A B P;
+  Param1c3.covariant := Param2b3.covariant@{u v} A B P;
+  Param1c3.contravariant := Param2b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b3_2b2a@{u v} :=
+fun (A B : Type@{u}) (P : Param2b3.Rel@{u v} A B) =>
+{|
+  Param2b2a.R := Param2b3.R@{u v} A B P;
+  Param2b2a.covariant := Param2b3.covariant@{u v} A B P;
+  Param2b2a.contravariant := Param2b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b3_2b2b@{u v} :=
+fun (A B : Type@{u}) (P : Param2b3.Rel@{u v} A B) =>
+{|
+  Param2b2b.R := Param2b3.R@{u v} A B P;
+  Param2b2b.covariant := Param2b3.covariant@{u v} A B P;
+  Param2b2b.contravariant := Param2b3.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b4_1b4@{u v} :=
+fun (A B : Type@{u}) (P : Param2b4.Rel@{u v} A B) =>
+{|
+  Param1b4.R := Param2b4.R@{u v} A B P;
+  Param1b4.covariant := Param2b4.covariant@{u v} A B P;
+  Param1b4.contravariant := Param2b4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b4_1c4@{u v} :=
+fun (A B : Type@{u}) (P : Param2b4.Rel@{u v} A B) =>
+{|
+  Param1c4.R := Param2b4.R@{u v} A B P;
+  Param1c4.covariant := Param2b4.covariant@{u v} A B P;
+  Param1c4.contravariant := Param2b4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_2b4_2b3@{u v} :=
+fun (A B : Type@{u}) (P : Param2b4.Rel@{u v} A B) =>
+{|
+  Param2b3.R := Param2b4.R@{u v} A B P;
+  Param2b3.covariant := Param2b4.covariant@{u v} A B P;
+  Param2b3.contravariant := Param2b4.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_30_2a0@{u v} :=
+fun (A B : Type@{u}) (P : Param30.Rel@{u v} A B) =>
+{|
+  Param2a0.R := Param30.R@{u v} A B P;
+  Param2a0.covariant := Param30.covariant@{u v} A B P;
+  Param2a0.contravariant := Param30.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_30_2b0@{u v} :=
+fun (A B : Type@{u}) (P : Param30.Rel@{u v} A B) =>
+{|
+  Param2b0.R := Param30.R@{u v} A B P;
+  Param2b0.covariant := Param30.covariant@{u v} A B P;
+  Param2b0.contravariant := Param30.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31a_2a1a@{u v} :=
+fun (A B : Type@{u}) (P : Param31a.Rel@{u v} A B) =>
+{|
+  Param2a1a.R := Param31a.R@{u v} A B P;
+  Param2a1a.covariant := Param31a.covariant@{u v} A B P;
+  Param2a1a.contravariant := Param31a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31a_2b1a@{u v} :=
+fun (A B : Type@{u}) (P : Param31a.Rel@{u v} A B) =>
+{|
+  Param2b1a.R := Param31a.R@{u v} A B P;
+  Param2b1a.covariant := Param31a.covariant@{u v} A B P;
+  Param2b1a.contravariant := Param31a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31a_30@{u v} :=
+fun (A B : Type@{u}) (P : Param31a.Rel@{u v} A B) =>
+{|
+  Param30.R := Param31a.R@{u v} A B P;
+  Param30.covariant := Param31a.covariant@{u v} A B P;
+  Param30.contravariant := Param31a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31b_2a1b@{u v} :=
+fun (A B : Type@{u}) (P : Param31b.Rel@{u v} A B) =>
+{|
+  Param2a1b.R := Param31b.R@{u v} A B P;
+  Param2a1b.covariant := Param31b.covariant@{u v} A B P;
+  Param2a1b.contravariant := Param31b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31b_2b1b@{u v} :=
+fun (A B : Type@{u}) (P : Param31b.Rel@{u v} A B) =>
+{|
+  Param2b1b.R := Param31b.R@{u v} A B P;
+  Param2b1b.covariant := Param31b.covariant@{u v} A B P;
+  Param2b1b.contravariant := Param31b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31b_30@{u v} :=
+fun (A B : Type@{u}) (P : Param31b.Rel@{u v} A B) =>
+{|
+  Param30.R := Param31b.R@{u v} A B P;
+  Param30.covariant := Param31b.covariant@{u v} A B P;
+  Param30.contravariant := Param31b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31c_2a1c@{u v} :=
+fun (A B : Type@{u}) (P : Param31c.Rel@{u v} A B) =>
+{|
+  Param2a1c.R := Param31c.R@{u v} A B P;
+  Param2a1c.covariant := Param31c.covariant@{u v} A B P;
+  Param2a1c.contravariant := Param31c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31c_2b1c@{u v} :=
+fun (A B : Type@{u}) (P : Param31c.Rel@{u v} A B) =>
+{|
+  Param2b1c.R := Param31c.R@{u v} A B P;
+  Param2b1c.covariant := Param31c.covariant@{u v} A B P;
+  Param2b1c.contravariant := Param31c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_31c_30@{u v} :=
+fun (A B : Type@{u}) (P : Param31c.Rel@{u v} A B) =>
+{|
+  Param30.R := Param31c.R@{u v} A B P;
+  Param30.covariant := Param31c.covariant@{u v} A B P;
+  Param30.contravariant := Param31c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32a_2a2a@{u v} :=
+fun (A B : Type@{u}) (P : Param32a.Rel@{u v} A B) =>
+{|
+  Param2a2a.R := Param32a.R@{u v} A B P;
+  Param2a2a.covariant := Param32a.covariant@{u v} A B P;
+  Param2a2a.contravariant := Param32a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32a_2b2a@{u v} :=
+fun (A B : Type@{u}) (P : Param32a.Rel@{u v} A B) =>
+{|
+  Param2b2a.R := Param32a.R@{u v} A B P;
+  Param2b2a.covariant := Param32a.covariant@{u v} A B P;
+  Param2b2a.contravariant := Param32a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32a_31a@{u v} :=
+fun (A B : Type@{u}) (P : Param32a.Rel@{u v} A B) =>
+{|
+  Param31a.R := Param32a.R@{u v} A B P;
+  Param31a.covariant := Param32a.covariant@{u v} A B P;
+  Param31a.contravariant := Param32a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32a_31c@{u v} :=
+fun (A B : Type@{u}) (P : Param32a.Rel@{u v} A B) =>
+{|
+  Param31c.R := Param32a.R@{u v} A B P;
+  Param31c.covariant := Param32a.covariant@{u v} A B P;
+  Param31c.contravariant := Param32a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32b_2a2b@{u v} :=
+fun (A B : Type@{u}) (P : Param32b.Rel@{u v} A B) =>
+{|
+  Param2a2b.R := Param32b.R@{u v} A B P;
+  Param2a2b.covariant := Param32b.covariant@{u v} A B P;
+  Param2a2b.contravariant := Param32b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32b_2b2b@{u v} :=
+fun (A B : Type@{u}) (P : Param32b.Rel@{u v} A B) =>
+{|
+  Param2b2b.R := Param32b.R@{u v} A B P;
+  Param2b2b.covariant := Param32b.covariant@{u v} A B P;
+  Param2b2b.contravariant := Param32b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32b_31b@{u v} :=
+fun (A B : Type@{u}) (P : Param32b.Rel@{u v} A B) =>
+{|
+  Param31b.R := Param32b.R@{u v} A B P;
+  Param31b.covariant := Param32b.covariant@{u v} A B P;
+  Param31b.contravariant := Param32b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_32b_31c@{u v} :=
+fun (A B : Type@{u}) (P : Param32b.Rel@{u v} A B) =>
+{|
+  Param31c.R := Param32b.R@{u v} A B P;
+  Param31c.covariant := Param32b.covariant@{u v} A B P;
+  Param31c.contravariant := Param32b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_33_2a3@{u v} :=
+fun (A B : Type@{u}) (P : Param33.Rel@{u v} A B) =>
+{|
+  Param2a3.R := Param33.R@{u v} A B P;
+  Param2a3.covariant := Param33.covariant@{u v} A B P;
+  Param2a3.contravariant := Param33.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_33_2b3@{u v} :=
+fun (A B : Type@{u}) (P : Param33.Rel@{u v} A B) =>
+{|
+  Param2b3.R := Param33.R@{u v} A B P;
+  Param2b3.covariant := Param33.covariant@{u v} A B P;
+  Param2b3.contravariant := Param33.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_33_32a@{u v} :=
+fun (A B : Type@{u}) (P : Param33.Rel@{u v} A B) =>
+{|
+  Param32a.R := Param33.R@{u v} A B P;
+  Param32a.covariant := Param33.covariant@{u v} A B P;
+  Param32a.contravariant := Param33.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_33_32b@{u v} :=
+fun (A B : Type@{u}) (P : Param33.Rel@{u v} A B) =>
+{|
+  Param32b.R := Param33.R@{u v} A B P;
+  Param32b.covariant := Param33.covariant@{u v} A B P;
+  Param32b.contravariant := Param33.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_34_2a4@{u v} :=
+fun (A B : Type@{u}) (P : Param34.Rel@{u v} A B) =>
+{|
+  Param2a4.R := Param34.R@{u v} A B P;
+  Param2a4.covariant := Param34.covariant@{u v} A B P;
+  Param2a4.contravariant := Param34.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_34_2b4@{u v} :=
+fun (A B : Type@{u}) (P : Param34.Rel@{u v} A B) =>
+{|
+  Param2b4.R := Param34.R@{u v} A B P;
+  Param2b4.covariant := Param34.covariant@{u v} A B P;
+  Param2b4.contravariant := Param34.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_34_33@{u v} :=
+fun (A B : Type@{u}) (P : Param34.Rel@{u v} A B) =>
+{|
+  Param33.R := Param34.R@{u v} A B P;
+  Param33.covariant := Param34.covariant@{u v} A B P;
+  Param33.contravariant := Param34.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_40_30@{u v} :=
+fun (A B : Type@{u}) (P : Param40.Rel@{u v} A B) =>
+{|
+  Param30.R := Param40.R@{u v} A B P;
+  Param30.covariant := Param40.covariant@{u v} A B P;
+  Param30.contravariant := Param40.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_41a_31a@{u v} :=
+fun (A B : Type@{u}) (P : Param41a.Rel@{u v} A B) =>
+{|
+  Param31a.R := Param41a.R@{u v} A B P;
+  Param31a.covariant := Param41a.covariant@{u v} A B P;
+  Param31a.contravariant := Param41a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_41a_40@{u v} :=
+fun (A B : Type@{u}) (P : Param41a.Rel@{u v} A B) =>
+{|
+  Param40.R := Param41a.R@{u v} A B P;
+  Param40.covariant := Param41a.covariant@{u v} A B P;
+  Param40.contravariant := Param41a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_41b_31b@{u v} :=
+fun (A B : Type@{u}) (P : Param41b.Rel@{u v} A B) =>
+{|
+  Param31b.R := Param41b.R@{u v} A B P;
+  Param31b.covariant := Param41b.covariant@{u v} A B P;
+  Param31b.contravariant := Param41b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_41b_40@{u v} :=
+fun (A B : Type@{u}) (P : Param41b.Rel@{u v} A B) =>
+{|
+  Param40.R := Param41b.R@{u v} A B P;
+  Param40.covariant := Param41b.covariant@{u v} A B P;
+  Param40.contravariant := Param41b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_41c_31c@{u v} :=
+fun (A B : Type@{u}) (P : Param41c.Rel@{u v} A B) =>
+{|
+  Param31c.R := Param41c.R@{u v} A B P;
+  Param31c.covariant := Param41c.covariant@{u v} A B P;
+  Param31c.contravariant := Param41c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_41c_40@{u v} :=
+fun (A B : Type@{u}) (P : Param41c.Rel@{u v} A B) =>
+{|
+  Param40.R := Param41c.R@{u v} A B P;
+  Param40.covariant := Param41c.covariant@{u v} A B P;
+  Param40.contravariant := Param41c.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_42a_32a@{u v} :=
+fun (A B : Type@{u}) (P : Param42a.Rel@{u v} A B) =>
+{|
+  Param32a.R := Param42a.R@{u v} A B P;
+  Param32a.covariant := Param42a.covariant@{u v} A B P;
+  Param32a.contravariant := Param42a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_42a_41a@{u v} :=
+fun (A B : Type@{u}) (P : Param42a.Rel@{u v} A B) =>
+{|
+  Param41a.R := Param42a.R@{u v} A B P;
+  Param41a.covariant := Param42a.covariant@{u v} A B P;
+  Param41a.contravariant := Param42a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_42a_41c@{u v} :=
+fun (A B : Type@{u}) (P : Param42a.Rel@{u v} A B) =>
+{|
+  Param41c.R := Param42a.R@{u v} A B P;
+  Param41c.covariant := Param42a.covariant@{u v} A B P;
+  Param41c.contravariant := Param42a.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_42b_32b@{u v} :=
+fun (A B : Type@{u}) (P : Param42b.Rel@{u v} A B) =>
+{|
+  Param32b.R := Param42b.R@{u v} A B P;
+  Param32b.covariant := Param42b.covariant@{u v} A B P;
+  Param32b.contravariant := Param42b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_42b_41b@{u v} :=
+fun (A B : Type@{u}) (P : Param42b.Rel@{u v} A B) =>
+{|
+  Param41b.R := Param42b.R@{u v} A B P;
+  Param41b.covariant := Param42b.covariant@{u v} A B P;
+  Param41b.contravariant := Param42b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_42b_41c@{u v} :=
+fun (A B : Type@{u}) (P : Param42b.Rel@{u v} A B) =>
+{|
+  Param41c.R := Param42b.R@{u v} A B P;
+  Param41c.covariant := Param42b.covariant@{u v} A B P;
+  Param41c.contravariant := Param42b.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_43_33@{u v} :=
+fun (A B : Type@{u}) (P : Param43.Rel@{u v} A B) =>
+{|
+  Param33.R := Param43.R@{u v} A B P;
+  Param33.covariant := Param43.covariant@{u v} A B P;
+  Param33.contravariant := Param43.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_43_42a@{u v} :=
+fun (A B : Type@{u}) (P : Param43.Rel@{u v} A B) =>
+{|
+  Param42a.R := Param43.R@{u v} A B P;
+  Param42a.covariant := Param43.covariant@{u v} A B P;
+  Param42a.contravariant := Param43.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_43_42b@{u v} :=
+fun (A B : Type@{u}) (P : Param43.Rel@{u v} A B) =>
+{|
+  Param42b.R := Param43.R@{u v} A B P;
+  Param42b.covariant := Param43.covariant@{u v} A B P;
+  Param42b.contravariant := Param43.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_44_34@{u v} :=
+fun (A B : Type@{u}) (P : Param44.Rel@{u v} A B) =>
+{|
+  Param34.R := Param44.R@{u v} A B P;
+  Param34.covariant := Param44.covariant@{u v} A B P;
+  Param34.contravariant := Param44.contravariant@{u v} A B P
+|}
+.
+
+
+Coercion forget_44_43@{u v} :=
+fun (A B : Type@{u}) (P : Param44.Rel@{u v} A B) =>
+{|
+  Param43.R := Param44.R@{u v} A B P;
+  Param43.covariant := Param44.covariant@{u v} A B P;
+  Param43.contravariant := Param44.contravariant@{u v} A B P
+|}
+.
+
 (* Set Printing Universes. Print Module Param2a3. *)
 (* Set Printing Universes. Print forget_42b_41. *)
 (* Check forall (p : Param44.Rel nat nat), @paths (Param12a.Rel nat nat) p p. *)
