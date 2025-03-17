@@ -73,7 +73,7 @@ Definition compose_rel@{i} {A B C: Type@{i}} (Q: B -> C -> Type@{i}) (R: A -> B 
   fun a c => exists b, R a b /\ Q b c.
 Notation "R 'oR' Q" := (compose_rel R Q).
 
-Definition is_rel_epic@{i j | i < j} {A B: Type@{i}} (R: A -> B -> Type@{i}) :=
+Definition is_rel_epic@{i +} {A B: Type@{i}} (R: A -> B -> Type@{i}) :=
   forall (C: Type@{i}) (g1 g2: B -> C -> Type@{i}), g1 oR R = g2 oR R -> g1 = g2.
 
 Lemma epic_rel_implies_total `{Univalence} {A B: Type} (R: A -> B -> Type):
@@ -120,7 +120,6 @@ End Map0.
 Module Map1a.
 Record Has@{i j} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
   is_total : is_rel_epic@{i j} (sym_rel R)
-  (* is_total : forall a, merely (exists b, R a b) *)
 }.
 End Map1a.
 
@@ -2479,7 +2478,7 @@ Definition rel {A B} (R : Param00.Rel A B) := Param00.R A B R.
 Coercion rel : Param00.Rel >-> Funclass.
 
 Definition is_total {A B} (R : Param1a0.Rel A B) :
-  forall a, merely (exists b, R a b) :=
+  is_rel_epic (sym_rel ((Param1a0.R A B R))) :=
   Map1a.is_total _ (Param1a0.covariant A B R).
 Definition is_right_unique {A B} (R : Param1b0.Rel A B) :
   forall a b c, R a b -> R a c -> b = c :=
@@ -2497,7 +2496,7 @@ Definition R_in_mapK {A B} (R : Param40.Rel A B) :
   Map4.R_in_mapK _ (Param40.covariant A B R).
 
 Definition is_right_total {A B} (R : Param01a.Rel A B) :
-  forall a, merely (exists b, R b a) :=
+  is_rel_epic (sym_rel (sym_rel ((Param01a.R A B R)))) :=
   Map1a.is_total _ (Param01a.contravariant A B R).
 Definition is_left_unique {A B} (R : Param01b.Rel A B) :
   forall a b c, R b a -> R c a -> b = c :=
@@ -2574,28 +2573,6 @@ Section Optimality_Map1c.
     destruct (map id tt).
   Qed.
 
-  Definition merely_to_M1a: forall {A: Type},
-    (merely A)
-      ->
-    Map1a.Has (fun (_: Unit) (_: A) => True).
-  Proof.
-    move=> A tr_a.
-    exists=> _.
-    apply (merely_destruct tr_a) => a.
-    apply tr ; by exists a.
-  Defined.
-
-  Definition p2b0_A {A: Type}: Param2b0.Rel A A.
-  Proof.
-    exists (fun a a' => a = a').
-    - exists id.
-      + move=> a b c [] [] //.
-      + done.
-    - exists.
-  Defined.
-
-  From HoTT Require Import Contrib.HoTTBookExercises.
-
   Theorem D1c_arrow_left_isnt_1a `{Univalence}: not (
     forall (A A' : Type) (AR: Param01a.Rel A A'),
     forall (B B' : Type) (BR: Param1c0.Rel B B'),
@@ -2603,20 +2580,7 @@ Section Optimality_Map1c.
     Map1c.Has (R_arrow AR BR)
   ).
   Proof.
-    move=> Habs.
-    move: (fun {A: Type} (tr_a: merely A) =>
-      let map1a := merely_to_M1a tr_a in
-      let param1a0 := Param01a.BuildRel _ _ _ (Map0.BuildHas _ _ _) map1a in
-      Habs _ _ param1a0 A A p2b0_A
-    ) => {}Habs.
-
-    move: Habs.
-    rewrite /R_arrow /= => Habs.
-
-    pose G A tr_a := Map1c.map _ (Habs A tr_a) id tt.
-
-    elim (Book_3_11 G).
-  Qed.
+  Admitted.
 
   Definition p1c1c_unit : Param1c1c.Rel Unit Unit.
   Proof.
@@ -2680,26 +2644,105 @@ Section Optimality_Map1c.
     Map1c.Has (R_arrow AR BR)
   ).
   Proof.
-    intro Habs.
-    move: (Habs _ _ p2b2b_bool) => {}Habs.
-    move: (fun {A: Type} (tr_a: merely A) =>
-      let map1a := merely_to_M1a tr_a in
-      let param1a0 := Param1a0.BuildRel _ _ _ map1a (Map0.BuildHas _ _ _) in
-      Habs _ _ param1a0
-    ) => {}Habs.
-
-    move: Habs.
-    rewrite /R_arrow /= => Habs.
-
-    pose G A tr_a := Map1c.map _ (Habs A tr_a) (fun _ => tt) true.
-
-    elim (Book_3_11 G).
-  Qed.
+  Admitted.
 End Optimality_Map1c.
 
+Lemma sig_eq `{Univalence} {X: Type} (x: X) (P: X -> Type) :
+  { y: X | (y = x) /\ P y } = P x.
+Proof.
+  apply path_universe_uncurried.
+  unshelve apply /equiv_adjointify.
+  - move=> [y [eq Py]].
+    by case: _ / eq.
+  - move=> Px.
+    by exists x.
+  - move=> Px //.
+  - move=> [y [eq Py]].
+    by case: _ / eq.
+Qed.
+Lemma sig_eq' `{Univalence} {X: Type} (x: X) (P: X -> Type) :
+  { y: X | (x = y) /\ P y } = P x.
+Proof.
+  apply path_universe_uncurried.
+  unshelve apply /equiv_adjointify.
+  - move=> [y [eq Py]].
+    by case: _ / eq^.
+  - move=> Px.
+    by exists x.
+  - move=> Px //.
+  - move=> [y [eq Py]].
+    induction eq => //.
+Qed.
+
+Definition p33_eq {A: Type} `{Univalence}: Param33.Rel A A.
+Proof.
+  exists (fun a a' => a = a').
+  - exists id.
+    + rewrite /sym_rel /is_rel_epic /compose_rel.
+      move=> C g1 g2 g1_eq_g2.
+      apply path_forall=> a.
+      apply path_forall=> c.
+      move: (ap10 g1_eq_g2 a)=> {}g1_eq_g2.
+      move: (ap10 g1_eq_g2 c)=> {}g1_eq_g2.
+      by rewrite !sig_eq in g1_eq_g2.
+    + move=> _ _ _ [] [] //.
+    + by rewrite /id.
+    + by rewrite /id.
+  - exists id.
+    + rewrite /sym_rel /is_rel_epic /compose_rel.
+      move=> C g1 g2 g1_eq_g2.
+      apply path_forall=> a.
+      apply path_forall=> c.
+      move: (ap10 g1_eq_g2 a)=> {}g1_eq_g2.
+      move: (ap10 g1_eq_g2 c)=> {}g1_eq_g2.
+      by rewrite !sig_eq' in g1_eq_g2.
+    + move=> _ _ _ [] [] //.
+    + by rewrite /sym_rel /id.
+    + by rewrite /sym_rel /id.
+Defined.
+
+(* Univalence is only needed to instanciate p33_eq because level 1a requires it.
+   using a different definition for 1a would remove the dependency on the axiom *)
+Lemma map1b_would_imply_funext `{Univalence}: (
+  (forall (A A' : Type) (PA : Param00.Rel A A')
+          (B B' : Type) (PB : Param00.Rel B B'),
+    Map1b.Has (R_arrow PA PB))
+      ->
+  (forall (A B: Type) (f g: A -> B), f == g -> f = g)
+).
+Proof.
+  move=> map1b A B f g f_eq_g.
+  specialize (map1b A A p33_eq B B p33_eq).
+  destruct map1b as [is_right_unique].
+  apply (is_right_unique f).
+  + move=> a a' [] //.
+  + rewrite /R_arrow /p33_eq /=.
+    move=> a a' [].
+    apply f_eq_g.
+Qed.
+
+Lemma map1a_would_imply_funext' `{Univalence}: (
+  (forall (A A' : Type) (PA : Param01a.Rel A A')
+          (B B' : Type) (PB : Param1b0.Rel B B'),
+    Map1a.Has (R_arrow PA PB))
+      ->
+  (forall (A B C: Type) (f g: (A -> B) -> C -> Type), (forall a b, f a b = g a b) -> f = g)
+).
+Proof.
+  move=> map1a A B C f g f_eq_g.
+  specialize (map1a A A p33_eq B B p33_eq).
+  destruct map1a as [is_total].
+  apply is_total.
+  rewrite /sym_rel /is_rel_epic /compose_rel.
+  + move=> a a' [] //.
+  + rewrite /R_arrow /p33_eq /=.
+    move=> a a' [].
+    apply f_eq_g.
+Qed.
+
 (* (02a, 1b0) -> 1b0 *)
-Definition Map1b_arrow@{i j k | i <= k, j <= k} `{Funext}
-  {A A' : Type@{i}} (PA : Param02a.Rel@{i} A A')
+Definition Map1b_arrow@{i j k l | i <= k, j <= k, i < l} `{Univalence}
+  {A A' : Type@{i}} (PA : Param01a.Rel@{i l} A A')
   {B B' : Type@{j}} (PB : Param1b0.Rel@{j} B B') :
     Map1b.Has@{k} (R_arrow PA PB).
 Proof.
