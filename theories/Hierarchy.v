@@ -73,8 +73,14 @@ Definition compose_rel@{i} {A B C: Type@{i}} (Q: B -> C -> Type@{i}) (R: A -> B 
   fun a c => exists b, R a b /\ Q b c.
 Notation "R 'oR' Q" := (compose_rel R Q).
 
+(* We introduce the notation '==R', akin to '==', to be used instead of normal equality
+  in the definition of is_rel_epic: this is to prevent needing functionnal extensionnality *)
+Definition rel_pointwise_eq {A B: Type} (R: A -> B -> Type) (T: A -> B -> Type) :=
+  forall a b, R a b = T a b.
+Notation "R '==R' T" := (rel_pointwise_eq R T) (at level 70).
+
 Definition is_rel_epic@{i +} {A B: Type@{i}} (R: A -> B -> Type@{i}) :=
-  forall (C: Type@{i}) (g1 g2: B -> C -> Type@{i}), g1 oR R = g2 oR R -> g1 = g2.
+  forall (C: Type@{i}) (g1 g2: B -> C -> Type@{i}), (g1 oR R) ==R (g2 oR R) -> g1 ==R g2.
 
 Lemma epic_rel_implies_total `{Univalence} {A B: Type} (R: A -> B -> Type):
   is_rel_epic R -> forall b, merely (exists a, R a b).
@@ -85,10 +91,9 @@ Proof.
   set g2 := fun (b: B) (_: Unit) => merely (exists a, R a b).
   have := R_is_epic _ g1 g2 => H' b.
 
-  assert (g1 oR R = g2 oR R).
-  - apply path_forall=> x.
+  assert ((g1 oR R) ==R (g2 oR R)).
+  - move=> x [].
     rewrite /g1 /g2 /compose_rel.
-    apply path_forall; case.
     apply equiv_path_universe.
     unshelve apply /equiv_adjointify.
     + move=> [b0 [r _]].
@@ -104,10 +109,10 @@ Proof.
       by case: _ /.
     + move=> [b0 [r t]].
       by case t.
-  - have := ap10 (H' X) b.
+  - have := (H' X) b tt.
     rewrite /g1 /g2.
     move=> eq.
-    by case: _ / (ap10 eq).
+    by case: _ / eq.
 Qed.
 
 (* first unilateral witnesses describing one side of the structure given to a relation *)
@@ -2679,22 +2684,18 @@ Proof.
   exists (fun a a' => a = a').
   - exists id.
     + rewrite /sym_rel /is_rel_epic /compose_rel.
-      move=> C g1 g2 g1_eq_g2.
-      apply path_forall=> a.
-      apply path_forall=> c.
-      move: (ap10 g1_eq_g2 a)=> {}g1_eq_g2.
-      move: (ap10 g1_eq_g2 c)=> {}g1_eq_g2.
+      move=> C g1 g2 g1_eq_g2 a c.
+      move: (g1_eq_g2 a)=> {}g1_eq_g2.
+      move: (g1_eq_g2 c)=> {}g1_eq_g2.
       by rewrite !sig_eq in g1_eq_g2.
     + move=> _ _ _ [] [] //.
     + by rewrite /id.
     + by rewrite /id.
   - exists id.
     + rewrite /sym_rel /is_rel_epic /compose_rel.
-      move=> C g1 g2 g1_eq_g2.
-      apply path_forall=> a.
-      apply path_forall=> c.
-      move: (ap10 g1_eq_g2 a)=> {}g1_eq_g2.
-      move: (ap10 g1_eq_g2 c)=> {}g1_eq_g2.
+      move=> C g1 g2 g1_eq_g2 a c.
+      move: (g1_eq_g2 a)=> {}g1_eq_g2.
+      move: (g1_eq_g2 c)=> {}g1_eq_g2.
       by rewrite !sig_eq' in g1_eq_g2.
     + move=> _ _ _ [] [] //.
     + by rewrite /sym_rel /id.
@@ -2722,11 +2723,11 @@ Proof.
 Qed.
 
 Lemma map1a_would_imply_funext' `{Univalence}: (
-  (forall (A A' : Type) (PA : Param01a.Rel A A')
-          (B B' : Type) (PB : Param1b0.Rel B B'),
+  (forall (A A' : Type) (PA : Param00.Rel A A')
+          (B B' : Type) (PB : Param00.Rel B B'),
     Map1a.Has (R_arrow PA PB))
       ->
-  (forall (A B C: Type) (f g: (A -> B) -> C -> Type), (forall a b, f a b = g a b) -> f = g)
+  (forall (A B: Type) (f g: A -> B), f == g -> f = g)
 ).
 Proof.
   move=> map1a A B C f g f_eq_g.
