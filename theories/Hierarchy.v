@@ -603,21 +603,28 @@ Proof.
   by apply (R_implies_P b).
 Qed.
 
+(* (01a, 1b0) -> 1b0 *)
 Definition Map1b_arrow@{i j k | i <= k, j <= k} `{Funext}
-  {A A' : Type@{i}} (PA : Param02a.Rel@{i} A A')
+  {A A' : Type@{i}} (PA : Param01a.Rel@{i} A A')
   {B B' : Type@{j}} (PB : Param1b0.Rel@{j} B B') :
     Map1b.Has@{k} (R_arrow PA PB).
 Proof.
-  exists; rewrite /R_arrow.
+Admitted.
+  (* exists; rewrite /R_arrow.
   move=> f g h R_fg R_fh.
   apply: path_arrow.
   move=> x'.
-  apply (is_right_unique PB (f (comap PA x')) (g x')).
-  - by apply /R_fg /(comap_in_R PA).
+  destruct PA as [AR map0 [is_total]] ; simpl in * => {map0}.
+  destruct PB as [BR [is_right_unique] map0] ; simpl in * => {map0}.
+  unshelve eapply is_right_unique.
+  - apply f.
+    admit.
+  - apply /R_fg.
+   /(comap_in_R PA).
   - by apply /R_fh /(comap_in_R PA).
-Qed.
+Qed. *)
 
-Section Optimality_Map1b.
+(* Section Optimality_Map1b.
   Definition p02b_false : Param02b.Rel Unit Unit.
   Proof.
     exists (fun _ _ => False).
@@ -788,16 +795,18 @@ Section Optimality_Map1b.
     enough (unit_name true = unit_name false) by apply true_ne_false, (ap10 X tt).
     apply (is_right_unique (unit_name true)) ; rewrite /R_arrow /p02a_unit /p1c0_unit //.
   Qed.
-End Optimality_Map1b.
+End Optimality_Map1b. *)
 
-(* (02b, 2a0) -> 1a0 *)
+(* (01b, 1a0) -> 1a0 *)
 Definition Map1a_arrow@{i j k | i <= k, j <= k}
-  {A A' : Type@{i}} (PA : Param02b.Rel@{i} A A')
-  {B B' : Type@{j}} (PB : Param2a0.Rel@{j} B B') :
+  {A A' : Type@{i}} (PA : Param01b.Rel@{i} A A')
+  {B B' : Type@{j}} (PB : Param1a0.Rel@{j} B B') :
     Map1a.Has@{k} (R_arrow PA PB).
 Proof.
-  exists; rewrite /R_arrow => f.
-
+  exists; rewrite /R_arrow => P isHProp.
+  move=> q H.
+  have := is_right_total PA.
+  (*  *)
   apply tr.
   exists (fun a' => map PB (f (comap PA a'))).
   move=> a a' aR.
