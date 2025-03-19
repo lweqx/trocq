@@ -51,8 +51,7 @@ End Map0.
 
 Module Map1a.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_total : forall (P: Type@{i}), IsHProp P ->
-             forall a, (forall b, R a b -> P) -> P
+  is_total : forall a, (forall b, R a b -> Empty) -> Empty
 }.
 End Map1a.
 
@@ -70,8 +69,7 @@ End Map1c.
 
 Module Map2a.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_total : forall (P: Type@{i}), IsHProp P ->
-            forall a, (forall b, R a b -> P) -> P;
+  is_total :  forall a, (forall b, R a b -> Empty) -> Empty;
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b
 }.
@@ -88,8 +86,7 @@ End Map2b.
 Module Map3.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
   is_right_unique : forall a b c, R a b -> R a c -> b = c;
-  is_total : forall (P: Type@{i}), IsHProp P ->
-             forall a, (forall b, R a b -> P) -> P;
+  is_total :  forall a, (forall b, R a b -> Empty) -> Empty;
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b
@@ -101,8 +98,7 @@ Module Map4.
    symmetrical and transport-free *)
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
   is_right_unique : forall a b c, R a b -> R a c -> b = c;
-  is_total : forall (P: Type@{i}), IsHProp P ->
-             forall a, (forall b, R a b -> P) -> P;
+  is_total :  forall a, (forall b, R a b -> Empty) -> Empty;
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b;
@@ -366,8 +362,7 @@ Definition rel {A B} (R : Param00.Rel A B) := Param00.R A B R.
 Coercion rel : Param00.Rel >-> Funclass.
 
 Definition is_total {A B} (R : Param1a0.Rel A B) :
-  forall (P: Type@{i}), IsHProp P ->
-  forall a, (forall b, R a b -> P) -> P :=
+  forall a, (forall b, R a b -> Empty) -> Empty :=
   Map1a.is_total _ (Param1a0.covariant A B R).
 Definition is_right_unique {A B} (R : Param1b0.Rel A B) :
   forall a b c, R a b -> R a c -> b = c :=
@@ -385,8 +380,7 @@ Definition R_in_mapK {A B} (R : Param40.Rel A B) :
   Map4.R_in_mapK _ (Param40.covariant A B R).
 
 Definition is_right_total {A B} (R : Param01a.Rel A B) :
-  forall (P: Type@{i}), IsHProp P ->
-  forall a, (forall b, R b a -> P) -> P :=
+  forall a, (forall b, R b a -> Empty) -> Empty :=
   Map1a.is_total _ (Param01a.contravariant A B R).
 Definition is_left_unique {A B} (R : Param01b.Rel A B) :
   forall a b c, R b a -> R c a -> b = c :=
@@ -609,20 +603,27 @@ Definition Map1b_arrow@{i j k | i <= k, j <= k} `{Funext}
   {B B' : Type@{j}} (PB : Param1b0.Rel@{j} B B') :
     Map1b.Has@{k} (R_arrow PA PB).
 Proof.
+  exists=> f f' g'.
+  rewrite /R_arrow.
+  move=> R_ff' R_fg'.
+  apply path_arrow=> a'.
+  (* assert (merely (f' a' = g' a')).
+  - move=> H'.
+    apply (is_right_total PA a').
+    move=> a PAba'. apply H'.
+    have := is_right_unique PB (f a).
+    apply.
+    + apply R_ff'. *)
+  assert (((f' a' = g' a') -> Empty) -> Empty).
+  - move=> H'.
+    have := is_right_total PA a'.
+    apply.
+    move=> a PAba'. apply H'.
+    have := is_right_unique PB (f a).
+    apply.
+    + by apply R_ff'.
+    + by apply R_fg'.
 Admitted.
-  (* exists; rewrite /R_arrow.
-  move=> f g h R_fg R_fh.
-  apply: path_arrow.
-  move=> x'.
-  destruct PA as [AR map0 [is_total]] ; simpl in * => {map0}.
-  destruct PB as [BR [is_right_unique] map0] ; simpl in * => {map0}.
-  unshelve eapply is_right_unique.
-  - apply f.
-    admit.
-  - apply /R_fg.
-   /(comap_in_R PA).
-  - by apply /R_fh /(comap_in_R PA).
-Qed. *)
 
 (* Section Optimality_Map1b.
   Definition p02b_false : Param02b.Rel Unit Unit.
@@ -805,6 +806,14 @@ Definition Map1a_arrow@{i j k | i <= k, j <= k}
 Proof.
   exists; rewrite /R_arrow => P isHProp.
   move=> q H.
+  (* case: PB => [BR [is_left_unique] map0] in H *.
+  case: PA => [AR map0' [K]] in H *.
+  simpl in H.
+  unfold sym_rel in K. *)
+  apply H.
+
+
+  apply is_left_unique.
   have := is_right_total PA.
   (*  *)
   apply tr.
