@@ -78,6 +78,7 @@ Notation " x ^ " := (symmetry x) : type_scope.
 (* first unilateral witnesses describing one side of the structure given to a relation *)
 
 Module Map0.
+Set Warnings "-non-primitive-record".
 Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
