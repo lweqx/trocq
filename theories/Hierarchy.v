@@ -13,7 +13,7 @@
 
 From Coq Require Import ssreflect.
 From HoTT Require Import HoTT.
-Require Import HoTT_additions Database.
+Require Import HoTT_additions Setoid Database.
 From elpi Require Import elpi.
 
 From Trocq.Elpi Extra Dependency "param-class.elpi" as param_class.
@@ -39,41 +39,6 @@ Register paths as trocq.paths.
 (*************************)
 (* Parametricity Classes *)
 (*************************)
-
-(* ideas and code stolen from https://rocq-prover.org/doc/V9.0.0/stdlib/Stdlib.Classes.SetoidClass.html *)
-
-Class Reflexive@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) :=
-  reflexivity : forall x : A, R x x.
-Class Symmetric@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) := {
-  symmetry : forall {x y}, R x y -> R y x;
-  symmetry_involutive {x y} (r: R x y): symmetry (symmetry r) = r
-}.
-Class Transitive@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) :=
-  transitivity : forall {x y z}, R x y -> R y z -> R x z.
-
-Class Equivalence@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) : Type := {
-  #[global] Equivalence_Reflexive :: Reflexive@{i} R;
-  #[global] Equivalence_Symmetric :: Symmetric@{i} R;
-  #[global] Equivalence_Transitive :: Transitive@{i} R
-}.
-
-Class Setoid@{i} (A: Type@{i}) := {
-  equiv : A -> A -> Type@{i} ;
-  #[global] setoid_equiv :: Equivalence@{i} equiv
-}.
-
-Lemma setoid_refl {A} `(sa : Setoid A) : Reflexive equiv.
-Proof. exact Equivalence_Reflexive. Qed.
-Lemma setoid_sym {A} `(sa : Setoid A) : Symmetric equiv.
-Proof. exact Equivalence_Symmetric. Qed.
-Lemma setoid_trans {A} `(sa : Setoid A) : Transitive equiv.
-Proof. exact Equivalence_Transitive. Qed.
-#[global] Existing Instance setoid_refl.
-#[global] Existing Instance setoid_sym.
-#[global] Existing Instance setoid_trans.
-
-Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
-Notation " x ^ " := (symmetry x) : type_scope.
 
 (* first unilateral witnesses describing one side of the structure given to a relation *)
 
@@ -568,7 +533,7 @@ Proof.
   - exact idmap.
   - exact (fun a b e => e).
   - exact (fun a b e => e).
-  - exact (fun a b e => 1%path).
+  - move=> a a' r ; reflexivity.
 Defined.
 
 Definition id_Map4_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
@@ -578,8 +543,9 @@ Proof.
   - exact idmap.
   - exact (fun A B e => e^).
   - rewrite /sym_rel ; exact (fun A B e => e^).
-  - rewrite /sym_rel => a b rel.
-    apply symmetry_involutive.
+  - rewrite /sym_rel => a a' rel.
+    rewrite symmetry_involutive.
+    reflexivity.
 Defined.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)

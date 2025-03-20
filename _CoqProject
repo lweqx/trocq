@@ -6,6 +6,7 @@
 -R examples/ Trocq_examples
 
 theories/HoTT_additions.v
+theories/Setoid.v
 theories/Hierarchy.v
 theories/Param_Type.v
 theories/Param_forall.v
