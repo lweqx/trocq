@@ -40,48 +40,102 @@ Register paths as trocq.paths.
 (* Parametricity Classes *)
 (*************************)
 
+(* ideas and code stolen from https://rocq-prover.org/doc/V9.0.0/stdlib/Stdlib.Classes.SetoidClass.html *)
+
+Class Reflexive@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) :=
+  reflexivity : forall x : A, R x x.
+Class Symmetric@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) := {
+  symmetry : forall {x y}, R x y -> R y x;
+  symmetry_involutive {x y} (r: R x y): symmetry (symmetry r) = r
+}.
+Class Transitive@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) :=
+  transitivity : forall {x y z}, R x y -> R y z -> R x z.
+
+Class Equivalence@{i} {A: Type@{i}} (R : A -> A -> Type@{i}) : Type := {
+  #[global] Equivalence_Reflexive :: Reflexive@{i} R;
+  #[global] Equivalence_Symmetric :: Symmetric@{i} R;
+  #[global] Equivalence_Transitive :: Transitive@{i} R
+}.
+
+Class Setoid@{i} (A: Type@{i}) := {
+  equiv : A -> A -> Type@{i} ;
+  #[global] setoid_equiv :: Equivalence@{i} equiv
+}.
+
+Lemma setoid_refl {A} `(sa : Setoid A) : Reflexive equiv.
+Proof. exact Equivalence_Reflexive. Qed.
+Lemma setoid_sym {A} `(sa : Setoid A) : Symmetric equiv.
+Proof. exact Equivalence_Symmetric. Qed.
+Lemma setoid_trans {A} `(sa : Setoid A) : Transitive equiv.
+Proof. exact Equivalence_Transitive. Qed.
+#[global] Existing Instance setoid_refl.
+#[global] Existing Instance setoid_sym.
+#[global] Existing Instance setoid_trans.
+
+Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
+Notation " x ^ " := (symmetry x) : type_scope.
+
 (* first unilateral witnesses describing one side of the structure given to a relation *)
 
 Module Map0.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {}.
+Record Has@{i}
+  {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
+BuildHas {
+}.
 End Map0.
 
 Module Map1.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i}
+  {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
+BuildHas {
   map : A -> B
 }.
 End Map1.
 
 Module Map2a.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i}
+  {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
+BuildHas {
   map : A -> B;
-  map_in_R : forall (a : A) (b : B), map a = b -> R a b
+  map_in_R : forall (a : A) (b : B), map a ~ b -> R a b
 }.
 End Map2a.
 
 Module Map2b.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i}
+  {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
+BuildHas {
   map : A -> B;
-  R_in_map : forall (a : A) (b : B), R a b -> map a = b
+  R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
 }.
 End Map2b.
 
 Module Map3.
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i}
+    {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
+    (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
+BuildHas {
   map : A -> B;
-  map_in_R : forall (a : A) (b : B), map a = b -> R a b;
-  R_in_map : forall (a : A) (b : B), R a b -> map a = b
+  map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
+  R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
 }.
 End Map3.
 
 Module Map4.
 (* An alternative presentation of Sozeau, Tabareau, Tanter's univalent parametricity:
    symmetrical and transport-free *)
-Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
+Record Has@{i}
+    {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
+    (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
+BuildHas {
   map : A -> B;
-  map_in_R : forall (a : A) (b : B), map a = b -> R a b;
-  R_in_map : forall (a : A) (b : B), R a b -> map a = b;
-  R_in_mapK : forall (a : A) (b : B) (r : R a b), (map_in_R a b (R_in_map a b r)) = r
+  map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
+  R_in_map : forall (a : A) (b : B), R a b -> map a ~ b;
+  R_in_mapK : forall (a : A) (b : B), (map_in_R a b) o (R_in_map a b) == idmap
 }.
 End Map4.
 
@@ -133,146 +187,81 @@ Elpi Accumulate lp:{{
   generate-module (pc M N as Class) U L :-
     % open module
     coq.env.begin-module {param-class->add-suffix Class "Param"} none,
+
     % generate record
     coq.univ-instance UI [L],
     map->class M CovariantSubRecord,
     map->class N ContravariantSubRecord,
-    SymRel = {sym-rel},
+    SymRel = pglobal {sym-rel} UI,
     TypeU = sort (typ U),
+    Setoid = pglobal {coq.locate "Setoid"} UI,
     RelDecl =
       parameter "A" _ TypeU (a\
-        parameter "B" _ TypeU (b\
-          record "Rel" (sort (typ {coq.univ.super U})) "BuildRel" (
-            field [] "R" {{ lp:a -> lp:b -> lp:{{ sort (typ U) }} }} r\
-            field [] "covariant" (app [pglobal CovariantSubRecord UI, a, b, r]) _\
-            field [] "contravariant"
-              (app [pglobal ContravariantSubRecord UI, b, a, app [pglobal SymRel UI, a, b, r]]) (_\
-          end-record)))),
-    @primitive! => @udecl! [L] ff [] ff => coq.env.add-indt RelDecl TrocqInd,coq.env.indt TrocqInd _ _ _ _ [TrocqBuild] _,
-    Rel = indt TrocqInd,
+      parameter "B" _ TypeU (b\
+      parameter "sA" _ {{lp:Setoid lp:a}} (setoid_a\
+      parameter "sB" _ {{lp:Setoid lp:b}} (setoid_b\
+      record "Rel" (sort (typ {coq.univ.super U})) "BuildRel" (
+        field [] "R" {{ lp:a -> lp:b -> lp:TypeU }} r\
+        field [] "setoidR" {{ forall (a: lp:a) (b: lp:b), lp:Setoid (lp:r a b)}} setoid_r\
+        field [] "covariant" (
+          app [pglobal CovariantSubRecord UI, a, b, setoid_a, setoid_b, r, setoid_r]
+        ) _\
+        field [] "contravariant" (
+          app [
+            pglobal ContravariantSubRecord UI, b, a, setoid_b, setoid_a,
+            app [SymRel, a, b, r], {{ fun (b: lp:b) (a: lp:a) => lp:setoid_r a b }}
+          ]
+        ) _\
+      end-record))))),
+    @primitive! =>
+    @udecl! [L] ff [] ff =>
+      coq.env.add-indt RelDecl TrocqInd,
+    coq.env.indt TrocqInd _ _ _ _ [TrocqBuild] _,
     coq.env.projections TrocqInd
-      [some CR, some CovariantProj, some ContravariantProj],
+      [some CR, some SetoidRProj, some CovariantProj, some ContravariantProj],
+
     % add R to database for later use
-    R = const CR,
     coq.elpi.accumulate _ "trocq.db"
       (clause _ (after "default-r") (trocq.db.r Class CR)),
     coq.elpi.accumulate execution-site "trocq.db"
       (clause _ _ (trocq.db.gref->class (indt TrocqInd) Class)),
     coq.elpi.accumulate execution-site "trocq.db"
       (clause _ _ (trocq.db.rel Class (indt TrocqInd) (indc TrocqBuild)
-        (const CR) (const CovariantProj) (const ContravariantProj))),
+        (const CR) (const SetoidRProj) (const CovariantProj) (const ContravariantProj))),
+
+    Rel = pglobal (indt TrocqInd) UI,
+    R = pglobal (const CR) UI,
+    SetoidR = pglobal (const SetoidRProj) UI,
+    Covariant = pglobal (const CovariantProj) UI,
+    Contravariant = pglobal (const ContravariantProj) UI,
+
     % generate projections on the covariant subrecord
-    map-class->fields M MFields,
     CovariantSubRecord = indt CovariantSubRecordIndt,
-    coq.env.projections CovariantSubRecordIndt MSomeProjs,
-    Covariant = const CovariantProj,
-    std.forall2 MFields MSomeProjs (field-name\ some-pr\ sigma Decl Pr\
-      some-pr = some Pr,
-      Decl =
-        (fun `A` (sort (typ U)) a\ fun `B` (sort (typ U)) b\ fun `P` (app [pglobal Rel UI, a, b]) p\
-          app [pglobal (const Pr) UI, a, b,
-            app [pglobal R UI, a, b, p], app [pglobal Covariant UI, a, b, p]]),
-      @udecl! [L] ff [] ff => coq.env.add-const field-name Decl _ @transparent! _
+    std.forall2 {map-class->fields M} {coq.env.projections CovariantSubRecordIndt}
+      (field-name\ some-pr\ sigma Decl Pr\
+        some-pr = some Pr,
+        @udecl! [L] ff [] ff =>
+          coq.env.add-const field-name {{
+            fun (A: lp:TypeU) (B: lp:TypeU) (SA: lp:Setoid A) (SB: lp:Setoid B) (P: lp:Rel A B SA SB) =>
+              lp:{{pglobal (const Pr) UI}} A B SA SB (lp:R A B SA SB P)) (lp:SetoidR A B SA SB P) (lp:Covariant A B SA SB P)
+          }} _ @transparent! _
     ),
+
     % generate projections on the contravariant subrecord
-    map-class->cofields N NCoFields,
-    Contravariant = const ContravariantProj,
     ContravariantSubRecord = indt ContravariantSubRecordIndt,
-    coq.env.projections ContravariantSubRecordIndt NSomeProjs,
-    std.forall2 NCoFields NSomeProjs (field-name\ some-pr\ sigma Decl Pr\
-      some-pr = some Pr,
-      Decl =
-        (fun `A` (sort (typ U)) a\ fun `B` (sort (typ U)) b\
-          fun `P` (app [pglobal Rel UI, a, b]) p\
-            app [pglobal (const Pr) UI, b, a,
-              app [pglobal SymRel UI, a, b, app [pglobal R UI, a, b, p]],
-              app [pglobal Contravariant UI, a, b, p]]),
-      @udecl! [L] ff [] ff => coq.env.add-const field-name Decl _ @transparent! _
+    std.forall2 {map-class->cofields N} {coq.env.projections ContravariantSubRecordIndt}
+      (field-name\ some-pr\ sigma Decl Pr\
+        some-pr = some Pr,
+        @udecl! [L] ff [] ff =>
+          coq.env.add-const field-name {{
+            fun (A: lp:TypeU) (B: lp:TypeU) (SA: lp:Setoid A) (SB: lp:Setoid B) (P: lp:Rel A B SA SB) =>
+              lp:{{pglobal (const Pr) UI}} B A SB SA (lp:SymRel A B (lp:R A B SA SB P))
+                  (fun (b: B) (a: A) => lp:SetoidR A B SA SB P a b) (lp:Contravariant A B SA SB P)
+          }} _ @transparent! _
     ),
+
     % close module
     coq.env.end-module _.
-}}.
-Elpi Typecheck.
-
-(********************)
-(* Record Weakening *)
-(********************)
-
-Coercion forgetMap43@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map4.Has@{i} R) : Map3.Has@{i} R :=
-    @Map3.BuildHas A B R (@Map4.map A B R m) (@Map4.map_in_R A B R m) (@Map4.R_in_map A B R m).
-
-Coercion forgetMap32a@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i} R) : Map2a.Has@{i} R :=
-    @Map2a.BuildHas A B R (@Map3.map A B R m) (@Map3.map_in_R A B R m).
-
-Coercion forgetMap32b@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map3.Has@{i} R) : Map2b.Has@{i} R :=
-    @Map2b.BuildHas A B R (@Map3.map A B R m) (@Map3.R_in_map A B R m).
-
-Coercion forgetMap2a1@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2a.Has@{i} R) : Map1.Has@{i} R :=
-    @Map1.BuildHas A B R (@Map2a.map A B R m).
-
-Coercion forgetMap2b1@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map2b.Has@{i} R) : Map1.Has@{i} R :=
-    @Map1.BuildHas A B R (@Map2b.map A B R m).
-
-Coercion forgetMap10@{i}
-  {A B : Type@{i}} {R : A -> B -> Type@{i}} (m : Map1.Has@{i} R) : Map0.Has@{i} R :=
-    @Map0.BuildHas A B R.
-
-Elpi Accumulate lp:{{
-  % generate 2 functions of weakening per possible weakening:
-  % one on the left and one on the right, if possible
-  pred generate-forget i:param-class, i:univ, i:univ.variable.
-  generate-forget (pc M N as Class) U L :-
-    coq.univ-instance UI [L],
-    map->class M MGR,
-    map->class N NGR,
-    trocq.db.rel Class RelMN _ RMN CovariantMN ContravariantMN,
-    % covariant weakening
-    std.forall {map-class.weakenings-from M} (m1\
-      sigma BuildRelM1N ForgetMapM Decl ForgetName ForgetCst M1GR RelM1N\
-      std.do! [
-        map->class m1 M1GR,
-        trocq.db.rel (pc m1 N) RelM1N BuildRelM1N _ _ _,
-        coq.coercion.db-for (grefclass MGR) (grefclass M1GR) [pr ForgetMapM _],
-        Decl =
-          (fun `A` (sort (typ U)) a\ fun `B` (sort (typ U)) b\
-            fun `P` (app [pglobal RelMN UI, a, b]) p\
-              app [pglobal BuildRelM1N UI, a, b, app [pglobal RMN UI, a, b, p],
-                app [pglobal ForgetMapM UI, a, b, app [pglobal RMN UI, a, b, p],
-                  app [pglobal CovariantMN UI, a, b, p]],
-                app [pglobal ContravariantMN UI, a, b, p]]),
-        param-class->add-2-suffix "_" Class (pc m1 N) "forget_" ForgetName,
-        @udecl! [L] ff [] ff =>
-          coq.env.add-const ForgetName Decl _ @transparent! ForgetCst,
-        @global! => coq.coercion.declare
-          (coercion (const ForgetCst) 2 RelMN (grefclass RelM1N))
-    ]),
-    % contravariant weakening
-    SymRel = {sym-rel},
-    std.forall {map-class.weakenings-from N} (n1\
-      sigma BuildRelMN1 ForgetMapN Decl ForgetName ForgetCst N1GR RelMN1\
-      std.do! [
-        map->class n1 N1GR,
-        trocq.db.rel (pc M n1) RelMN1 BuildRelMN1 _ _ _,
-        coq.coercion.db-for (grefclass NGR) (grefclass N1GR) [pr ForgetMapN _],
-        Decl =
-          (fun `A` (sort (typ U)) a\ fun `B` (sort (typ U)) b\
-            fun `P` (app [pglobal RelMN UI, a, b]) p\
-              app [pglobal BuildRelMN1 UI, a, b, app [pglobal RMN UI, a, b, p],
-                app [pglobal CovariantMN UI, a, b, p],
-                app [pglobal ForgetMapN UI, b, a,
-                  app [pglobal SymRel UI, a, b, app [pglobal RMN UI, a, b, p]],
-                  app [pglobal ContravariantMN UI, a, b, p]]]),
-        param-class->add-2-suffix "_" Class (pc M n1) "forget_" ForgetName,
-        @udecl! [L] ff [] ff =>
-          coq.env.add-const ForgetName Decl _ @transparent! ForgetCst,
-        @global! => coq.coercion.declare
-          (coercion (const ForgetCst) 2 RelMN (grefclass RelMN1))
-    ]).
 }}.
 Elpi Typecheck.
 
@@ -285,8 +274,111 @@ Elpi Query lp:{{
     std.forall Classes (n\
       generate-module (pc m n) U L
     )
-  ).
+  )
 }}.
+
+(********************)
+(* Record Weakening *)
+(********************)
+
+Coercion forgetMap43@{i}
+  {A B : Type@{i}} `{Setoid A} `{Setoid B} {R : A -> B -> Type@{i}} `{forall a b, Setoid@{i} (R a b)}
+  (m : Map4.Has@{i} R) : Map3.Has@{i} R :=
+    Map3.BuildHas _ _ _ _ R _ (Map4.map R m) (Map4.map_in_R R m) (Map4.R_in_map R m).
+
+Coercion forgetMap32a@{i}
+  {A B : Type@{i}} `{Setoid A} `{Setoid B} {R : A -> B -> Type@{i}} `{forall a b, Setoid@{i} (R a b)}
+  (m : Map3.Has@{i} R) : Map2a.Has@{i} R :=
+    Map2a.BuildHas _ _ _ _ R _ (Map3.map R m) (Map3.map_in_R R m).
+
+Coercion forgetMap32b@{i}
+  {A B : Type@{i}} `{Setoid A} `{Setoid B} {R : A -> B -> Type@{i}} `{forall a b, Setoid@{i} (R a b)}
+  (m : Map3.Has@{i} R) : Map2b.Has@{i} R :=
+    Map2b.BuildHas _ _ _ _ R _ (Map3.map R m) (Map3.R_in_map R m).
+
+Coercion forgetMap2a1@{i}
+  {A B : Type@{i}} `{Setoid A} `{Setoid B} {R : A -> B -> Type@{i}} `{forall a b, Setoid@{i} (R a b)}
+  (m : Map2a.Has@{i} R) : Map1.Has@{i} R :=
+    Map1.BuildHas _ _ _ _ R _ (Map2a.map R m).
+
+Coercion forgetMap2b1@{i}
+  {A B : Type@{i}} `{Setoid A} `{Setoid B} {R : A -> B -> Type@{i}} `{forall a b, Setoid@{i} (R a b)}
+  (m : Map2b.Has@{i} R) : Map1.Has@{i} R :=
+    Map1.BuildHas _ _ _ _ R _ (Map2b.map R m).
+
+Coercion forgetMap10@{i}
+  {A B : Type@{i}} `{Setoid A} `{Setoid B} {R : A -> B -> Type@{i}} `{forall a b, Setoid@{i} (R a b)}
+  (m : Map1.Has@{i} R) : Map0.Has@{i} R :=
+    Map0.BuildHas _ _ _ _ R _.
+
+Elpi Accumulate lp:{{
+  % generate 2 functions of weakening per possible weakening:
+  % one on the left and one on the right, if possible
+  pred generate-forget i:param-class, i:univ, i:univ.variable.
+  generate-forget (pc M N as Class) U L :-
+    coq.univ-instance UI [L],
+    map->class M MGR,
+    map->class N NGR,
+
+    trocq.db.rel Class RelMN _ RMN SetoidRMN CovariantMN ContravariantMN,
+    RelMN_UI = pglobal RelMN UI,
+    RMN_UI = pglobal RMN UI,
+    SetoidRMN_UI = pglobal SetoidRMN UI,
+    CovariantMN_UI = pglobal CovariantMN UI,
+    ContravariantMN_UI = pglobal ContravariantMN UI,
+
+    TypeU = sort (typ U),
+    Setoid = pglobal {coq.locate "Setoid"} UI,
+
+    % covariant weakening
+    std.forall {map-class.weakenings-from M} (m1\
+      sigma BuildRelM1N BuildRelM1N_UI ForgetMapM ForgetMapM_UI ForgetName ForgetCst M1GR RelM1N\
+      std.do! [
+        map->class m1 M1GR,
+        trocq.db.rel (pc m1 N) RelM1N BuildRelM1N _ _ _ _,
+        BuildRelM1N_UI = pglobal BuildRelM1N UI,
+
+        coq.coercion.db-for (grefclass MGR) (grefclass M1GR) [pr ForgetMapM _],
+        ForgetMapM_UI = pglobal ForgetMapM UI,
+
+        param-class->add-2-suffix "_" Class (pc m1 N) "forget_" ForgetName,
+        @udecl! [L] ff [] ff =>
+          coq.env.add-const ForgetName {{
+            fun (A: lp:TypeU) (B: lp:TypeU) (SA: lp:Setoid A) (SB: lp:Setoid B) (P: lp:RelMN_UI A B SA SB) =>
+              lp:BuildRelM1N_UI A B SA SB (lp:RMN_UI A B SA SB P) (lp:SetoidRMN_UI A B SA SB P)
+                (lp:ForgetMapM_UI A B SA SB (lp:RMN_UI A B SA SB P) (lp:SetoidRMN_UI A B SA SB P) (lp:CovariantMN_UI A B SA SB P))
+                (lp:ContravariantMN_UI A B SA SB P)
+          }} _ @transparent! ForgetCst,
+        @global! => coq.coercion.declare
+          (coercion (const ForgetCst) 2 RelMN (grefclass RelM1N))
+    ]),
+
+    % contravariant weakening
+    SymRel_UI = pglobal {sym-rel} UI,
+    std.forall {map-class.weakenings-from N} (n1\
+      sigma BuildRelMN1 BuildRelMN1_UI ForgetMapN ForgetMapN_UI ForgetName ForgetCst N1GR RelMN1\
+      std.do! [
+        map->class n1 N1GR,
+        trocq.db.rel (pc M n1) RelMN1 BuildRelMN1 _ _ _ _,
+        BuildRelMN1_UI = pglobal BuildRelMN1 UI,
+
+        coq.coercion.db-for (grefclass NGR) (grefclass N1GR) [pr ForgetMapN _],
+        ForgetMapN_UI = pglobal ForgetMapN UI,
+
+        param-class->add-2-suffix "_" Class (pc M n1) "forget_" ForgetName,
+        @udecl! [L] ff [] ff =>
+          coq.env.add-const ForgetName {{
+            fun (A: lp:TypeU) (B: lp:TypeU) (SA: lp:Setoid A) (SB: lp:Setoid B) (P: lp:RelMN_UI A B SA SB) =>
+              lp:BuildRelMN1_UI A B SA SB (lp:RMN_UI A B SA SB P) (lp:SetoidRMN_UI A B SA SB P)
+                (lp:CovariantMN_UI A B SA SB P)
+                (lp:ForgetMapN_UI B A SB SA (lp:SymRel_UI A B (lp:RMN_UI A B SA SB P))
+                  (fun (b: B) (a: A) => lp:SetoidRMN_UI A B SA SB P a b) (lp:ContravariantMN_UI A B SA SB P))
+          }} _ @transparent! ForgetCst,
+        @global! => coq.coercion.declare
+          (coercion (const ForgetCst) 2 RelMN (grefclass RelMN1))
+    ]).
+}}.
+Elpi Typecheck.
 
 Elpi Query lp:{{
   coq.univ.new U,
@@ -298,38 +390,35 @@ Elpi Query lp:{{
     )
   ).
 }}.
-(* Set Printing Universes. Print Module Param2a3. *)
-(* Set Printing Universes. Print forget_42b_41. *)
-(* Check forall (p : Param44.Rel nat nat), @paths (Param12a.Rel nat nat) p p. *)
 
 (* General projections *)
 
-Definition rel {A B} (R : Param00.Rel A B) := Param00.R A B R.
+Definition rel {A B} `{Setoid A} `{Setoid B} (R : Param00.Rel A B _ _) := Param00.R A B _ _ R.
 Coercion rel : Param00.Rel >-> Funclass.
 
-Definition map {A B} (R : Param10.Rel A B) : A -> B :=
-  Map1.map _ (Param10.covariant A B R).
-Definition map_in_R {A B} (R : Param2a0.Rel A B) :
-  forall (a : A) (b : B), map R a = b -> R a b :=
-  Map2a.map_in_R _ (Param2a0.covariant A B R).
-Definition R_in_map {A B} (R : Param2b0.Rel A B) :
-  forall (a : A) (b : B), R a b -> map R a = b :=
-  Map2b.R_in_map _ (Param2b0.covariant A B R).
-Definition R_in_mapK {A B} (R : Param40.Rel A B) :
-  forall (a : A) (b : B), map_in_R R a b o R_in_map R a b == idmap :=
-  Map4.R_in_mapK _ (Param40.covariant A B R).
+Definition map {A B} `{Setoid A} `{Setoid B} (R : Param10.Rel A B _ _) : A -> B :=
+  Map1.map _ (Param10.covariant A B _ _ R).
+Definition map_in_R {A B} `{Setoid A} `{Setoid B} (R : Param2a0.Rel A B _ _) :
+  forall (a : A) (b : B), map R a ~ b -> R a b :=
+  Map2a.map_in_R _ (Param2a0.covariant A B _ _ R).
+Definition R_in_map {A B} `{Setoid A} `{Setoid B} (R : Param2b0.Rel A B _ _) :
+  forall (a : A) (b : B), R a b -> map R a ~ b :=
+  Map2b.R_in_map _ (Param2b0.covariant A B _ _ R).
+Definition R_in_mapK {A B} `{Setoid A} `{Setoid B} (R : Param40.Rel A B _ _) :
+  forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) == idmap :=
+  Map4.R_in_mapK _ (Param40.covariant A B _ _ R).
 
-Definition comap {A B} (R : Param01.Rel A B) : B -> A :=
-  Map1.map _ (Param01.contravariant A B R).
-Definition comap_in_R {A B} (R : Param02a.Rel A B) :
-  forall (b : B) (a : A), comap R b = a -> R a b :=
-  Map2a.map_in_R _ (Param02a.contravariant A B R).
-Definition R_in_comap {A B} (R : Param02b.Rel A B) :
-  forall (b : B) (a : A), R a b -> comap R b = a :=
-  Map2b.R_in_map _ (Param02b.contravariant A B R).
-Definition R_in_comapK {A B} (R : Param04.Rel A B) :
-  forall (b : B) (a : A), comap_in_R R b a o R_in_comap R b a == idmap :=
-  Map4.R_in_mapK _ (Param04.contravariant A B R).
+Definition comap {A B} `{Setoid A} `{Setoid B} (R : Param01.Rel A B _ _) : B -> A :=
+  Map1.map _ (Param01.contravariant A B _ _ R).
+Definition comap_in_R {A B} `{Setoid A} `{Setoid B} (R : Param02a.Rel A B _ _) :
+  forall (b : B) (a : A), comap R b ~ a -> R a b :=
+  Map2a.map_in_R _ (Param02a.contravariant A B _ _ R).
+Definition R_in_comap {A B} `{Setoid A} `{Setoid B} (R : Param02b.Rel A B _ _) :
+  forall (b : B) (a : A), R a b -> comap R b ~ a :=
+  Map2b.R_in_map _ (Param02b.contravariant A B _ _ R).
+Definition R_in_comapK {A B} `{Setoid A} `{Setoid B} (R : Param04.Rel A B _ _) :
+  forall (b : B) (a : A), (comap_in_R R b a) o (R_in_comap R b a) == idmap :=
+  Map4.R_in_mapK _ (Param04.contravariant A B _ _ R).
 
 (* Aliasing *)
 
@@ -339,29 +428,32 @@ Delimit Scope param_scope with P.
 
 Notation UParam := Param44.Rel.
 Notation MkUParam := Param44.BuildRel.
-Notation "A <=> B" := (Param44.Rel A B) : param_scope.
+Notation "A <=> B" := (Param44.Rel A B _ _) : param_scope.
 Notation IsUMap := Map4.Has.
 Notation MkUMap := Map4.BuildHas.
-Arguments Map4.BuildHas {A B R}.
-Arguments Param44.BuildRel {A B R}.
+Arguments Map4.BuildHas {A B _ _ R}.
+Arguments Param44.BuildRel {A B _ _ R}.
 
 (* symmetry lemmas for Map *)
 
-Definition eq_Map0@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+Definition eq_Map0@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map0.Has@{i} R' -> Map0.Has@{i} R.
 Proof.
   move=> RR' []; exists.
 Defined.
 
-Definition eq_Map1@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+Definition eq_Map1@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map1.Has@{i} R' -> Map1.Has@{i} R.
 Proof.
   move=> RR' [m]; exists. exact.
 Defined.
 
-Definition eq_Map2a@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+Definition eq_Map2a@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map2a.Has@{i} R' -> Map2a.Has@{i} R.
 Proof.
@@ -369,7 +461,8 @@ Proof.
   move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
 Defined.
 
-Definition eq_Map2b@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+Definition eq_Map2b@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map2b.Has@{i} R' -> Map2b.Has@{i} R.
 Proof.
@@ -377,7 +470,8 @@ Proof.
   - move=> a' b /(RR' _ _)/Rm; exact.
 Defined.
 
-Definition eq_Map3@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+Definition eq_Map3@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+   {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map3.Has@{i} R' -> Map3.Has@{i} R.
 Proof.
@@ -386,7 +480,8 @@ Proof.
   - move=> a' b /(RR' _ _)/Rm; exact.
 Defined.
 
-Definition eq_Map4@{i} {A A' : Type@{i}} {R R' : A -> A' -> Type@{i}} :
+Definition eq_Map4@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map4.Has@{i} R' -> Map4.Has@{i} R.
 Proof.
@@ -396,50 +491,59 @@ move=> RR' [m mR Rm RmK]; unshelve eexists m _ _.
 - by move=> a' b r /=; rewrite RmK [_^-1%function _]equiv_funK.
 Defined.
 
-(* instances of MapN for A = A *)
+(* instances of MapN for A ~ A *)
 (* allows to build id_ParamMN : forall A, ParamMN.Rel A A *)
 
-Definition id_Map0 {A : Type} : Map0.Has (@paths A).
+Definition id_Map0 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map0.Has (fun (a a': A) => a ~ a').
 Proof. constructor. Defined.
 
-Definition id_Map0_sym {A : Type} : Map0.Has (sym_rel (@paths A)).
+Definition id_Map0_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map0.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof. constructor. Defined.
 
-Definition id_Map1 {A : Type} : Map1.Has (@paths A).
+Definition id_Map1 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map1.Has (fun (a a': A) => a ~ a').
 Proof. constructor. exact idmap. Defined.
 
-Definition id_Map1_sym {A : Type} : Map1.Has (sym_rel (@paths A)).
+Definition id_Map1_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map1.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof. constructor. exact idmap. Defined.
 
-Definition id_Map2a {A : Type} : Map2a.Has (@paths A).
+Definition id_Map2a {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map2a.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
   - exact idmap.
   - exact (fun a b e => e).
 Defined.
 
-Definition id_Map2a_sym {A : Type} : Map2a.Has (sym_rel (@paths A)).
+Definition id_Map2a_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map2a.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
 Defined.
 
-Definition id_Map2b {A : Type} : Map2b.Has (@paths A).
+Definition id_Map2b {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map2b.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
   - exact idmap.
   - exact (fun a b e => e).
 Defined.
 
-Definition id_Map2b_sym {A : Type} : Map2b.Has (sym_rel (@paths A)).
+Definition id_Map2b_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map2b.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
   - exact idmap.
-  - exact (fun A B e => e^).
+  - rewrite /sym_rel ; exact (fun A B e => e^).
 Defined.
 
-Definition id_Map3 {A : Type} : Map3.Has (@paths A).
+Definition id_Map3 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map3.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
   - exact idmap.
@@ -447,15 +551,17 @@ Proof.
   - exact (fun a b e => e).
 Defined.
 
-Definition id_Map3_sym {A : Type} : Map3.Has (sym_rel (@paths A)).
+Definition id_Map3_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map3.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
-  - exact (fun A B e => e^).
+  - rewrite /sym_rel ; exact (fun A B e => e^).
 Defined.
 
-Definition id_Map4 {A : Type} : Map4.Has (@paths A).
+Definition id_Map4 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map4.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
   - exact idmap.
@@ -464,34 +570,45 @@ Proof.
   - exact (fun a b e => 1%path).
 Defined.
 
-Definition id_Map4_sym {A : Type} : Map4.Has (sym_rel (@paths A)).
+Definition id_Map4_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
+  Map4.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
   - exact idmap.
   - exact (fun A B e => e^).
-  - exact (fun A B e => e^).
-  - exact (fun A B e => inv_V e).
+  - rewrite /sym_rel ; exact (fun A B e => e^).
+  - rewrite /sym_rel => a b rel.
+    apply symmetry_involutive.
 Defined.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
-
+Check @Param44.BuildRel.
 Elpi Accumulate lp:{{
   pred generate-id-param i:param-class, i:univ, i:univ.variable.
   generate-id-param (pc M N as Class) U L :-
     map-class->string M MStr,
     map-class->string N NStr,
     coq.univ-instance UI [L],
-    trocq.db.rel Class _ BuildRel _ _ _,
-    Paths = {paths},
+
+    trocq.db.rel Class _ BuildRel _ _ _ _,
+    BuildRel_UI = pglobal BuildRel UI,
+
     coq.locate {calc ("id_Map" ^ MStr)} IdMap,
     coq.locate {calc ("id_Map" ^ NStr ^ "_sym")} IdMapSym,
-    Decl =
-      (fun `A` (sort (typ U)) a\
-        app [pglobal BuildRel UI, a, a, app [pglobal Paths UI, a],
-          app [pglobal IdMap UI, a],
-          app [pglobal IdMapSym UI, a]]),
-    IdParam is "id_Param" ^ MStr ^ NStr,
-    @udecl! [L] ff [] ff => coq.env.add-const IdParam Decl _ @transparent! _.
+    IdMap_UI = pglobal IdMap UI,
+    IdMapSym_UI = pglobal IdMapSym UI,
+
+    TypeU = sort (typ U),
+    Setoid_UI = pglobal {coq.locate "Setoid"} UI,
+    Equiv_UI = pglobal {coq.locate "equiv"} UI,
+
+    @udecl! [L] ff [] ff =>
+      coq.env.add-const {calc ("id_Param" ^ MStr ^ NStr)} {{
+        fun (A: lp:TypeU) (SA: lp:Setoid_UI A)
+            (SR: forall (a a': A), lp:Setoid_UI (lp:Equiv_UI A SA a a')) =>
+          lp:BuildRel_UI A A SA SA (fun (a a': A) => lp:Equiv_UI A SA a a') SR
+            (lp:IdMap_UI A SA SR) (lp:IdMapSym_UI A SA SR)
+      }} _ @transparent! _.
 }}.
 Elpi Typecheck.
 
@@ -506,30 +623,35 @@ Elpi Query lp:{{
   ).
 }}.
 
-(* Check id_Param00. *)
-(* Check id_Param32b. *)
-
 (* symmetry property for Param *)
 
 Elpi Accumulate lp:{{
   pred generate-param-sym i:param-class, i:univ, i:univ.variable.
-  generate-param-sym (pc M N as Class) U L :-
+  generate-param-sym (pc M N) U L :-
     map-class->string M MStr,
     map-class->string N NStr,
     coq.univ-instance UI [L],
-    trocq.db.rel Class RelMN _ RMN CovariantMN ContravariantMN,
-    trocq.db.rel (pc N M) _ BuildRelNM _ _ _,
-    SymRel = {sym-rel},
-    Decl =
-      (fun `A` (sort (typ U)) a\ fun `B` (sort (typ U)) b\
-        fun `P` (app [pglobal RelMN UI, a, b]) p\
-          app [pglobal BuildRelNM UI, b, a,
-            app [pglobal SymRel UI, a, b, app [pglobal RMN UI, a, b, p]],
-            app [pglobal ContravariantMN UI, a, b, p],
-            app [pglobal CovariantMN UI, a, b, p]
-          ]),
-    ParamSym is "Param" ^ MStr ^ NStr ^ "_sym",
-    @udecl! [L] ff [] ff => coq.env.add-const ParamSym Decl _ @transparent! _.
+
+    trocq.db.rel (pc M N) RelMN _ RMN SetoidRMN CovariantMN ContravariantMN,
+    trocq.db.rel (pc N M) _ BuildRelNM _ _ _ _,
+    RelMN_UI = pglobal RelMN UI,
+    BuildRelNM_UI = pglobal BuildRelNM UI,
+    RMN_UI = pglobal RMN UI,
+    SetoidRMN_UI = pglobal SetoidRMN UI,
+    CovariantMN_UI = pglobal CovariantMN UI,
+    ContravariantMN_UI = pglobal ContravariantMN UI,
+
+    SymRel_UI = pglobal {sym-rel} UI,
+    TypeU = sort (typ U),
+    Setoid_UI = pglobal {coq.locate "Setoid"} UI,
+
+    @udecl! [L] ff [] ff =>
+      coq.env.add-const {calc ("Param" ^ MStr ^ NStr ^ "_sym")} {{
+        fun (A B: lp:TypeU) (SA: lp:Setoid_UI A) (SB: lp:Setoid_UI B) (P: lp:RelMN_UI A B SA SB) =>
+          lp:BuildRelNM_UI B A SB SA (lp:SymRel_UI A B (lp:RMN_UI A B SA SB P))
+            (fun (b: B) (a: A) => lp:SetoidRMN_UI A B SA SB P a b)
+            (lp:ContravariantMN_UI A B SA SB P) (lp:CovariantMN_UI A B SA SB P)
+      }} _ @transparent! _.
 }}.
 Elpi Typecheck.
 
@@ -543,6 +665,3 @@ Elpi Query lp:{{
     )
   ).
 }}.
-
-(* Check Param33_sym.
-Check Param2a4_sym. *)

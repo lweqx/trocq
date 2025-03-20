@@ -23,9 +23,8 @@ Elpi Db trocq.db lp:{{
 
   % get various values of the ParamMN module from the (M,N) class
   % trocq.db.rel (pc M N) {{ParamMN.Rel}} {{ParamMN.BuildRel}}
-  %   {{ParamMN.R}} {{ParamMN.covariant}} {{ParamMN.contravariant}}
-  pred trocq.db.rel o:param-class, o:gref, o:gref,
-    o:gref, o:gref, o:gref.
+  %   {{ParamMN.R}} {{ParamMN.setoidR}} {{ParamMN.covariant}} {{ParamMN.contravariant}}
+  pred trocq.db.rel o:param-class, o:gref, o:gref, o:gref, o:gref, o:gref, o:gref.
 
   pred trocq.db.r o:param-class, o:constant.
   :name "default-r"
