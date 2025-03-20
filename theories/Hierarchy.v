@@ -42,6 +42,8 @@ Register paths as trocq.paths.
 (* Parametricity Classes *)
 (*************************)
 
+Hypothesis O: ReflectiveSubuniverse.
+
 (* first unilateral witnesses describing one side of the structure given to a relation *)
 
 Module Map0.
@@ -51,13 +53,13 @@ End Map0.
 
 Module Map1a.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_total : forall a, (forall b, R a b -> Empty) -> Empty
+  is_total : O (forall a, exists b, R a b)
 }.
 End Map1a.
 
 Module Map1b.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_right_unique : forall a b c, R a b -> R a c -> b = c
+  is_right_unique : forall a b c, R a b -> R a c -> O (b = c)
 }.
 End Map1b.
 
@@ -69,7 +71,7 @@ End Map1c.
 
 Module Map2a.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_total :  forall a, (forall b, R a b -> Empty) -> Empty;
+  is_total : O (forall a, exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b
 }.
@@ -77,7 +79,7 @@ End Map2a.
 
 Module Map2b.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_right_unique : forall a b c, R a b -> R a c -> b = c;
+  is_right_unique : forall a b c, R a b -> R a c -> O (b = c);
   map : A -> B;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b
 }.
@@ -85,8 +87,8 @@ End Map2b.
 
 Module Map3.
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_right_unique : forall a b c, R a b -> R a c -> b = c;
-  is_total :  forall a, (forall b, R a b -> Empty) -> Empty;
+  is_right_unique : forall a b c, R a b -> R a c -> O (b = c);
+  is_total :  O (forall a, exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b
@@ -97,8 +99,8 @@ Module Map4.
 (* An alternative presentation of Sozeau, Tabareau, Tanter's univalent parametricity:
    symmetrical and transport-free *)
 Record Has@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := BuildHas {
-  is_right_unique : forall a b c, R a b -> R a c -> b = c;
-  is_total :  forall a, (forall b, R a b -> Empty) -> Empty;
+  is_right_unique : forall a b c, R a b -> R a c -> O (b = c);
+  is_total :  O (forall a, exists b, R a b);
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a = b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a = b;
@@ -362,10 +364,10 @@ Definition rel {A B} (R : Param00.Rel A B) := Param00.R A B R.
 Coercion rel : Param00.Rel >-> Funclass.
 
 Definition is_total {A B} (R : Param1a0.Rel A B) :
-  forall a, (forall b, R a b -> Empty) -> Empty :=
+  O (forall a, exists b, R a b) :=
   Map1a.is_total _ (Param1a0.covariant A B R).
 Definition is_right_unique {A B} (R : Param1b0.Rel A B) :
-  forall a b c, R a b -> R a c -> b = c :=
+  forall a b c, R a b -> R a c -> O (b = c) :=
   Map1b.is_right_unique _ (Param1b0.covariant A B R).
 Definition map {A B} (R : Param1c0.Rel A B) : A -> B :=
   Map1c.map _ (Param1c0.covariant A B R).
@@ -380,10 +382,10 @@ Definition R_in_mapK {A B} (R : Param40.Rel A B) :
   Map4.R_in_mapK _ (Param40.covariant A B R).
 
 Definition is_right_total {A B} (R : Param01a.Rel A B) :
-  forall a, (forall b, R b a -> Empty) -> Empty :=
+  O (forall b, exists a, R a b) :=
   Map1a.is_total _ (Param01a.contravariant A B R).
 Definition is_left_unique {A B} (R : Param01b.Rel A B) :
-  forall a b c, R b a -> R c a -> b = c :=
+  forall a b c, R b a -> R c a -> O (b = c) :=
   Map1b.is_right_unique _ (Param01b.contravariant A B R).
 Definition comap {A B} (R : Param01c.Rel A B) : B -> A :=
   Map1c.map _ (Param01c.contravariant A B R).
@@ -580,23 +582,6 @@ Defined.
   Qed.
 End Optimality_Map1c. *)
 
-Variable A: Type.
-Variable B: Type.
-Variable R: A -> B -> Type.
-
-Lemma is_pointless `{Univalence}: (
-  (forall a, merely (exists b, R a b))
-   ->
-  (forall P, IsHProp P -> forall a, (forall b, R a b -> P) -> P)
-).
-Proof.
-  move=> merely P P_is_HProp a.
-  move=> R_implies_P.
-  apply (merely_destruct (merely a)).
-  move=> [b Rab].
-  by apply (R_implies_P b).
-Qed.
-
 (* (01a, 1b0) -> 1b0 *)
 Definition Map1b_arrow@{i j k | i <= k, j <= k} `{Funext}
   {A A' : Type@{i}} (PA : Param01a.Rel@{i} A A')
@@ -606,23 +591,16 @@ Proof.
   exists=> f f' g'.
   rewrite /R_arrow.
   move=> R_ff' R_fg'.
-  apply path_arrow=> a'.
-  (* assert (merely (f' a' = g' a')).
-  - move=> H'.
-    apply (is_right_total PA a').
-    move=> a PAba'. apply H'.
-    have := is_right_unique PB (f a).
-    apply.
-    + apply R_ff'. *)
-  assert (((f' a' = g' a') -> Empty) -> Empty).
-  - move=> H'.
-    have := is_right_total PA a'.
-    apply.
-    move=> a PAba'. apply H'.
-    have := is_right_unique PB (f a).
-    apply.
-    + by apply R_ff'.
-    + by apply R_fg'.
+  have := is_right_total PA.
+  apply O_rec=> is_right_total.
+  apply to.
+  apply path_forall.
+  move=> a'.
+  move: (is_right_total a') => [a Paa'].
+  specialize (R_ff' a a' Paa').
+  specialize (R_fg' a a' Paa').
+  have := is_right_unique PB (f a) (f' a') (g' a') R_ff' R_fg'.
+  (* :((( *)
 Admitted.
 
 (* Section Optimality_Map1b.
@@ -804,24 +782,13 @@ Definition Map1a_arrow@{i j k | i <= k, j <= k}
   {B B' : Type@{j}} (PB : Param1a0.Rel@{j} B B') :
     Map1a.Has@{k} (R_arrow PA PB).
 Proof.
-  exists; rewrite /R_arrow => P isHProp.
-  move=> q H.
-  (* case: PB => [BR [is_left_unique] map0] in H *.
-  case: PA => [AR map0' [K]] in H *.
-  simpl in H.
-  unfold sym_rel in K. *)
-  apply H.
-
-
-  apply is_left_unique.
-  have := is_right_total PA.
-  (*  *)
-  apply tr.
-  exists (fun a' => map PB (f (comap PA a'))).
-  move=> a a' aR.
-  apply (map_in_R PB).
-  by rewrite (R_in_comap PA a' a).
-Qed.
+  exists.
+  have := is_total PB.
+  (* have := is_left_unique PA. *)
+  apply O_rec=> is_total.
+  apply to=> f.
+  (* :((( *)
+Admitted.
 
 Section Optimality_Map1a.
   Definition p02a_bool_bool_id: Param02a.Rel Bool Bool.
