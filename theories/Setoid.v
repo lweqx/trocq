@@ -10,12 +10,13 @@ Class Setoid@{i} (A: Type@{i}) := {
   equiv : A -> A -> Type@{i} ;
   #[global] Setoid_Reflexive :: Reflexive equiv ;
   #[global] Setoid_Symmetric :: Symmetric equiv ;
-  symmetry : forall {x y}, equiv x y -> equiv y x ;
-  symmetry_involutive {x y} (r: equiv x y): symmetry (symmetry r) = r
+  symmetry_involutive {x y} (r: equiv x y):
+    (* TODO: Can this be made prettier? *)
+    Setoid_Symmetric _ _ (Setoid_Symmetric _ _ r) = r ;
 }.
 
 #[global] Existing Instance Setoid_Reflexive.
 #[global] Existing Instance Setoid_Symmetric.
 
 Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
-Notation " x ^ " := (symmetry x) : type_scope.
+Notation " x ^ " := (Setoid_Symmetric _ _ x) : type_scope.
