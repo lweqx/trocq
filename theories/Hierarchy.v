@@ -361,6 +361,8 @@ Elpi Query lp:{{
 
 Definition rel {A B} `{Setoid A} `{Setoid B} (R : Param00.Rel A B _ _) := Param00.R A B _ _ R.
 Coercion rel : Param00.Rel >-> Funclass.
+Definition setoid_rel {A B} `{Setoid A} `{Setoid B} (R : Param00.Rel A B _ _) := Param00.setoidR A B _ _ R.
+#[global] Existing Instance setoid_rel.
 
 Definition map {A B} `{Setoid A} `{Setoid B} (R : Param10.Rel A B _ _) : MorphismSetoid A B :=
   Map1.map _ (Param10.covariant A B _ _ R).
