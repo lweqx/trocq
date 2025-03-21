@@ -56,7 +56,7 @@ Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : A -> B
+  map : MorphismSetoid A B
 }.
 End Map1.
 
@@ -65,7 +65,7 @@ Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : A -> B;
+  map : MorphismSetoid A B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b
 }.
 End Map2a.
@@ -75,7 +75,7 @@ Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : A -> B;
+  map : MorphismSetoid A B;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
 }.
 End Map2b.
@@ -85,7 +85,7 @@ Record Has@{i}
     {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
     (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : A -> B;
+  map : MorphismSetoid A B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
 }.
@@ -98,7 +98,7 @@ Record Has@{i}
     {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
     (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : A -> B;
+  map : MorphismSetoid A B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b;
   R_in_mapK : forall (a : A) (b : B), (map_in_R a b) o (R_in_map a b) =~= idmap
@@ -362,7 +362,7 @@ Elpi Query lp:{{
 Definition rel {A B} `{Setoid A} `{Setoid B} (R : Param00.Rel A B _ _) := Param00.R A B _ _ R.
 Coercion rel : Param00.Rel >-> Funclass.
 
-Definition map {A B} `{Setoid A} `{Setoid B} (R : Param10.Rel A B _ _) : A -> B :=
+Definition map {A B} `{Setoid A} `{Setoid B} (R : Param10.Rel A B _ _) : MorphismSetoid A B :=
   Map1.map _ (Param10.covariant A B _ _ R).
 Definition map_in_R {A B} `{Setoid A} `{Setoid B} (R : Param2a0.Rel A B _ _) :
   forall (a : A) (b : B), map R a ~ b -> R a b :=
@@ -374,7 +374,7 @@ Definition R_in_mapK {A B} `{Setoid A} `{Setoid B} (R : Param40.Rel A B _ _) :
   forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) =~= idmap :=
   Map4.R_in_mapK _ (Param40.covariant A B _ _ R).
 
-Definition comap {A B} `{Setoid A} `{Setoid B} (R : Param01.Rel A B _ _) : B -> A :=
+Definition comap {A B} `{Setoid A} `{Setoid B} (R : Param01.Rel A B _ _) : MorphismSetoid B A :=
   Map1.map _ (Param01.contravariant A B _ _ R).
 Definition comap_in_R {A B} `{Setoid A} `{Setoid B} (R : Param02a.Rel A B _ _) :
   forall (b : B) (a : A), comap R b ~ a -> R a b :=
@@ -446,7 +446,8 @@ Proof.
   - move=> a' b /(RR' _ _)/Rm; exact.
 Defined.
 
-Definition eq_Map4@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
+(* TODO: is this worring? *)
+(*Definition eq_Map4@{i} {A A' : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} A'}
     {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map4.Has@{i} R' -> Map4.Has@{i} R.
@@ -455,7 +456,7 @@ move=> RR' [m mR Rm RmK]; unshelve eexists m _ _.
 - move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
 - move=> a' b /(RR' _ _)/Rm; exact.
 - by move=> a' b r /=; rewrite RmK [_^-1%function _]equiv_funK.
-Defined.
+Defined. *)
 
 (* instances of MapN for A ~ A *)
 (* allows to build id_ParamMN : forall A, ParamMN.Rel A A *)
@@ -470,17 +471,17 @@ Proof. constructor. Defined.
 
 Definition id_Map1 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map1.Has (fun (a a': A) => a ~ a').
-Proof. constructor. exact idmap. Defined.
+Proof. constructor. by exists idmap. Defined.
 
 Definition id_Map1_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map1.Has (sym_rel (fun (a a': A) => a ~ a')).
-Proof. constructor. exact idmap. Defined.
+Proof. constructor. by exists idmap. Defined.
 
 Definition id_Map2a {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map2a.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - exact idmap.
+  - by exists idmap.
   - exact (fun a b e => e).
 Defined.
 
@@ -488,15 +489,16 @@ Definition id_Map2a_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map2a.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - exact idmap.
-  - exact (fun A B e => e^).
+  - by exists idmap.
+  - move=> a b f ; rewrite /sym_rel.
+    by symmetry.
 Defined.
 
 Definition id_Map2b {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map2b.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - exact idmap.
+  - by exists idmap.
   - exact (fun a b e => e).
 Defined.
 
@@ -504,15 +506,16 @@ Definition id_Map2b_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map2b.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - exact idmap.
-  - rewrite /sym_rel ; exact (fun A B e => e^).
+  - by exists idmap.
+  - move=> a b f ; rewrite /sym_rel.
+    by symmetry.
 Defined.
 
 Definition id_Map3 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map3.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - exact idmap.
+  - by exists idmap.
   - exact (fun a b e => e).
   - exact (fun a b e => e).
 Defined.
@@ -521,16 +524,18 @@ Definition id_Map3_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map3.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - exact idmap.
-  - exact (fun A B e => e^).
-  - rewrite /sym_rel ; exact (fun A B e => e^).
+  - by exists idmap.
+  - move=> a b f ; rewrite /sym_rel.
+    by symmetry.
+  - move=> a b f ; rewrite /sym_rel.
+    by symmetry.
 Defined.
 
 Definition id_Map4 {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map4.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - exact idmap.
+  - by exists idmap.
   - exact (fun a b e => e).
   - exact (fun a b e => e).
   - move=> a a' r ; reflexivity.
@@ -540,9 +545,11 @@ Definition id_Map4_sym {A : Type} `{Setoid A} `{forall a a', Setoid (a ~ a')} :
   Map4.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - exact idmap.
-  - exact (fun A B e => e^).
-  - rewrite /sym_rel ; exact (fun A B e => e^).
+  - by exists idmap.
+  - move=> a b f ; rewrite /sym_rel.
+    by symmetry.
+  - move=> a b f ; rewrite /sym_rel.
+    by symmetry.
   - rewrite /sym_rel => a a' rel.
     rewrite symmetry_involutive.
     reflexivity.

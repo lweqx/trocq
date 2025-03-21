@@ -23,3 +23,9 @@ Class Setoid@{i} (A: Type@{i}) := {
 Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
 Notation " x ^ " := (Setoid_Symmetric _ _ x) : type_scope.
 Notation " f =~= g " := (forall x, f x ~ g x) (at level 70, no associativity).
+
+(* Morphism of setoids *)
+Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{Setoid A} `{Setoid B} := {
+  f :> A -> B ;
+  preserves_rel : forall a a', a ~ a' -> f a ~ f a'
+}.
