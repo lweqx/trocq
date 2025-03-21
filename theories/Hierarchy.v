@@ -101,7 +101,7 @@ BuildHas {
   map : A -> B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b;
-  R_in_mapK : forall (a : A) (b : B), (map_in_R a b) o (R_in_map a b) == idmap
+  R_in_mapK : forall (a : A) (b : B), (map_in_R a b) o (R_in_map a b) =~= idmap
 }.
 End Map4.
 
@@ -371,7 +371,7 @@ Definition R_in_map {A B} `{Setoid A} `{Setoid B} (R : Param2b0.Rel A B _ _) :
   forall (a : A) (b : B), R a b -> map R a ~ b :=
   Map2b.R_in_map _ (Param2b0.covariant A B _ _ R).
 Definition R_in_mapK {A B} `{Setoid A} `{Setoid B} (R : Param40.Rel A B _ _) :
-  forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) == idmap :=
+  forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) =~= idmap :=
   Map4.R_in_mapK _ (Param40.covariant A B _ _ R).
 
 Definition comap {A B} `{Setoid A} `{Setoid B} (R : Param01.Rel A B _ _) : B -> A :=
@@ -383,7 +383,7 @@ Definition R_in_comap {A B} `{Setoid A} `{Setoid B} (R : Param02b.Rel A B _ _) :
   forall (b : B) (a : A), R a b -> comap R b ~ a :=
   Map2b.R_in_map _ (Param02b.contravariant A B _ _ R).
 Definition R_in_comapK {A B} `{Setoid A} `{Setoid B} (R : Param04.Rel A B _ _) :
-  forall (b : B) (a : A), (comap_in_R R b a) o (R_in_comap R b a) == idmap :=
+  forall (b : B) (a : A), (comap_in_R R b a) o (R_in_comap R b a) =~= idmap :=
   Map4.R_in_mapK _ (Param04.contravariant A B _ _ R).
 
 (* Aliasing *)
