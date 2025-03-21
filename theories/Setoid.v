@@ -13,10 +13,12 @@ Class Setoid@{i} (A: Type@{i}) := {
   symmetry_involutive {x y} (r: equiv x y):
     (* TODO: Can this be made prettier? *)
     Setoid_Symmetric _ _ (Setoid_Symmetric _ _ r) = r ;
+  #[global] Setoid_Transitive :: Transitive equiv
 }.
 
 #[global] Existing Instance Setoid_Reflexive.
 #[global] Existing Instance Setoid_Symmetric.
+#[global] Existing Instance Setoid_Transitive.
 
 Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
 Notation " x ^ " := (Setoid_Symmetric _ _ x) : type_scope.
