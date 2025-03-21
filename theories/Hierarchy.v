@@ -556,7 +556,6 @@ Proof.
 Defined.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
-Check @Param44.BuildRel.
 Elpi Accumulate lp:{{
   pred generate-id-param i:param-class, i:univ, i:univ.variable.
   generate-id-param (pc M N as Class) U L :-
