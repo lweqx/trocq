@@ -1,5 +1,8 @@
 From Coq Require Import ssreflect.
 From HoTT Require Import HoTT.
+From elpi Require Import elpi.
+
+From Trocq.Elpi Extra Dependency "param-class.elpi" as param_class.
 
 Set Universe Polymorphism.
 Unset Universe Minimization ToSet.
@@ -23,6 +26,9 @@ Class Setoid@{i} (A: Type@{i}) := {
 Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
 Notation " x ^ " := (Setoid_Symmetric _ _ x) : type_scope.
 Notation " f =~= g " := (forall x, f x ~ g x) (at level 70, no associativity).
+
+Register Setoid as trocq.setoid.
+Register equiv as trocq.equiv.
 
 (* Morphism of setoids *)
 Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{Setoid A} `{Setoid B} := {

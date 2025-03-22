@@ -34,7 +34,6 @@ Register map2b as trocq.indc_map2b.
 Register map3 as trocq.indc_map3.
 Register map4 as trocq.indc_map4.
 Register sym_rel as trocq.sym_rel.
-Register paths as trocq.paths.
 
 (*************************)
 (* Parametricity Classes *)
@@ -163,7 +162,7 @@ Elpi Accumulate lp:{{
 
     SymRel = pglobal {sym-rel} UI,
     TypeU = sort (typ U),
-    Setoid = pglobal {coq.locate "Setoid"} UI,
+    Setoid = pglobal {setoid} UI,
     RelDecl =
       parameter "A" _ TypeU (a\
       parameter "B" _ TypeU (b\

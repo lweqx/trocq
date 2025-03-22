@@ -37,8 +37,11 @@ map-classes high [map2b, map3, map4].
 pred sym-rel o:gref.
 sym-rel {{:gref lib:trocq.sym_rel}}.
 
-pred paths o:gref.
-paths {{:gref lib:trocq.paths}}.
+pred setoid o:gref.
+setoid {{:gref lib:trocq.setoid}}.
+
+pred equiv o:gref.
+equiv {{:gref lib:trocq.equiv}}.
 
 kind param-class type.
 type pc map-class -> map-class -> param-class.
