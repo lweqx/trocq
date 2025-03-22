@@ -158,6 +158,9 @@ Elpi Accumulate lp:{{
     coq.univ-instance UI [L],
     map->class M CovariantSubRecord,
     map->class N ContravariantSubRecord,
+    CovariantSubRecord_UI = pglobal CovariantSubRecord UI,
+    ContravariantSubRecord_UI = pglobal ContravariantSubRecord UI,
+
     SymRel = pglobal {sym-rel} UI,
     TypeU = sort (typ U),
     Setoid = pglobal {coq.locate "Setoid"} UI,
@@ -169,15 +172,13 @@ Elpi Accumulate lp:{{
       record "Rel" (sort (typ {coq.univ.super U})) "BuildRel" (
         field [] "R" {{ lp:a -> lp:b -> lp:TypeU }} r\
         field [] "setoidR" {{ forall (a: lp:a) (b: lp:b), lp:Setoid (lp:r a b)}} setoid_r\
-        field [] "covariant" (
-          app [pglobal CovariantSubRecord UI, a, b, setoid_a, setoid_b, r, setoid_r]
-        ) _\
-        field [] "contravariant" (
-          app [
-            pglobal ContravariantSubRecord UI, b, a, setoid_b, setoid_a,
-            app [SymRel, a, b, r], {{ fun (b: lp:b) (a: lp:a) => lp:setoid_r a b }}
-          ]
-        ) _\
+        field [] "covariant" {{
+          lp:CovariantSubRecord_UI lp:a lp:b lp:setoid_a lp:setoid_b lp:r lp:setoid_r
+        }} _\
+        field [] "contravariant" {{
+          lp:ContravariantSubRecord_UI lp:b lp:a lp:setoid_b lp:setoid_a
+          (lp:SymRel lp:a lp:b lp:r) (fun (b: lp:b) (a: lp:a) => lp:setoid_r a b)
+        }} _\
       end-record))))),
     @primitive! =>
     @udecl! [L] ff [] ff =>
