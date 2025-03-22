@@ -145,6 +145,7 @@ Elpi Typecheck.
 Elpi Accumulate lp:{{
   % generate a module with a record type containing:
   % - a relation R : A -> B -> Type;
+  % - for all a b, a Setoid instance on R a b
   % - a covariant (A to B) instance of one of the classes of Map listed above;
   % - a contravariant (B to A) instance.
   % (projections are generated so that all fields are accessible from the top record)
