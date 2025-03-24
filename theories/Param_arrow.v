@@ -55,8 +55,9 @@ Defined.
 Definition R_arrow@{i j}
   {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param00.Rel@{i} A A' SA SA')
   {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param00.Rel@{j} B B' SB SB') :=
-    fun (f: MorphismSetoid A B) (f': MorphismSetoid A' B') =>
-      forall a a', PA a a' -> PB (f a) (f' a').
+    fun (f: A ~> B) (f': A' ~> B') =>
+      forall a a', (PA a a') ~> (PB (f a) (f' a')
+    ).
 
 #[global]
 Instance SetoidRArrow@{i j l k | i <= l, j <= l, l <= k}

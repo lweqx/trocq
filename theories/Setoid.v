@@ -31,3 +31,5 @@ Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{Setoid A} `{Setoid B} 
   f :> A -> B ;
   preserves_rel : forall a a', a ~ a' -> f a ~ f a'
 }.
+
+Notation "A ~> B" := (MorphismSetoid A B) (at level 99, right associativity, B at level 200).

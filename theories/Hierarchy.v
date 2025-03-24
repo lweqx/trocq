@@ -55,7 +55,7 @@ Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : MorphismSetoid A B
+  map : A ~> B
 }.
 End Map1.
 
@@ -64,7 +64,7 @@ Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : MorphismSetoid A B;
+  map : A ~> B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b
 }.
 End Map2a.
@@ -74,7 +74,7 @@ Record Has@{i}
   {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : MorphismSetoid A B;
+  map : A ~> B;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
 }.
 End Map2b.
@@ -84,7 +84,7 @@ Record Has@{i}
     {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
     (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : MorphismSetoid A B;
+  map : A ~> B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
 }.
@@ -97,7 +97,7 @@ Record Has@{i}
     {A B : Type@{i}} `{Setoid@{i} A} `{Setoid@{i} B}
     (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
-  map : MorphismSetoid A B;
+  map : A ~> B;
   map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
   R_in_map : forall (a : A) (b : B), R a b -> map a ~ b;
   R_in_mapK : forall (a : A) (b : B), (map_in_R a b) o (R_in_map a b) =~= idmap
@@ -365,7 +365,7 @@ Coercion rel : Param00.Rel >-> Funclass.
 Definition setoid_rel {A B} `{Setoid A} `{Setoid B} (R : Param00.Rel A B _ _) := Param00.setoidR A B _ _ R.
 #[global] Existing Instance setoid_rel.
 
-Definition map {A B} `{Setoid A} `{Setoid B} (R : Param10.Rel A B _ _) : MorphismSetoid A B :=
+Definition map {A B} `{Setoid A} `{Setoid B} (R : Param10.Rel A B _ _) : A ~> B :=
   Map1.map _ (Param10.covariant A B _ _ R).
 Definition map_in_R {A B} `{Setoid A} `{Setoid B} (R : Param2a0.Rel A B _ _) :
   forall (a : A) (b : B), map R a ~ b -> R a b :=
@@ -377,7 +377,7 @@ Definition R_in_mapK {A B} `{Setoid A} `{Setoid B} (R : Param40.Rel A B _ _) :
   forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) =~= idmap :=
   Map4.R_in_mapK _ (Param40.covariant A B _ _ R).
 
-Definition comap {A B} `{Setoid A} `{Setoid B} (R : Param01.Rel A B _ _) : MorphismSetoid B A :=
+Definition comap {A B} `{Setoid A} `{Setoid B} (R : Param01.Rel A B _ _) : B ~> A :=
   Map1.map _ (Param01.contravariant A B _ _ R).
 Definition comap_in_R {A B} `{Setoid A} `{Setoid B} (R : Param02a.Rel A B _ _) :
   forall (b : B) (a : A), comap R b ~ a -> R a b :=
