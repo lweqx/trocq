@@ -33,7 +33,7 @@ Elpi Accumulate File param_class.
 #[global]
 Instance SetoidArrow@{i j l k | i <= l, j <= l, l <= k} `{Funext}
   {A: Type@{i}} `{Setoid A} {B: Type@{j}} `{Setoid B} :
-  Setoid@{k} (MorphismSetoid@{i j} A B).
+  Setoid@{k} (A ~> B).
 Proof.
   unshelve eexists.
   - exact (fun f f' => forall a a', a ~ a' -> f a ~ f' a').
@@ -63,7 +63,7 @@ Definition R_arrow@{i j}
 Instance SetoidRArrow@{i j l k | i <= l, j <= l, l <= k}
     {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param00.Rel@{i} A A' SA SA')
     {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param00.Rel@{j} B B' SB SB')
-    (f: MorphismSetoid@{i j} A B) (g: MorphismSetoid@{i j} A' B') :
+    (f: A ~> B) (g: A' ~> B') :
   Setoid@{k} (R_arrow PA PB f g).
 Proof.
   unshelve eexists.
