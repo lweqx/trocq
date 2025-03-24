@@ -409,8 +409,7 @@ Arguments Param44.BuildRel {A B _ _ R}.
 
 (* symmetry lemmas for Map *)
 
-(*
-TODO: to prove this, we need a different notion than 'R a a' <~> R' a a'`.
+(* TODO: to fully prove this, we need a different notion than 'R a a' <~> R' a a'`. *)
 
 Definition eq_Map0@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
     {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
@@ -438,7 +437,8 @@ Proof.
   unshelve eexists.
   - move /mR /(RR' _ _)^-1%equiv; exact.
   - move=> r1 r2 rr /=.
-Defined.
+    admit.
+Admitted.
 
 Definition eq_Map2b@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
     {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
@@ -446,8 +446,13 @@ Definition eq_Map2b@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
   Map2b.Has@{i} R' -> Map2b.Has@{i} R.
 Proof.
   move=> RR' [m Rm]; unshelve eexists m.
-  - move=> a' b /(RR' _ _)/Rm; exact.
-Defined.
+  - move=> a a'.
+    unshelve eexists.
+    + move=> /(RR' _ _) /Rm; exact.
+    + move=> r1 r2 rr /=.
+      apply preserves_rel.
+      admit.
+Admitted.
 
 Definition eq_Map3@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
    {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
@@ -455,26 +460,41 @@ Definition eq_Map3@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
   Map3.Has@{i} R' -> Map3.Has@{i} R.
 Proof.
   move=> RR' [m mR Rm]; unshelve eexists m.
-  - move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
-  - move=> a' b /(RR' _ _)/Rm; exact.
-Defined.
+  - move=> a a'.
+    unshelve eexists.
+    + move /mR /(RR' _ _)^-1%equiv; exact.
+    + move=> r1 r2 rr /=.
+      admit.
+  - move=> a a'.
+    unshelve eexists.
+    + move=> /(RR' _ _) /Rm; exact.
+    + move=> r1 r2 rr /=.
+      apply preserves_rel.
+      admit.
+Admitted.
 
 Definition eq_Map4@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
     {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
   Map4.Has@{i} R' -> Map4.Has@{i} R.
 Proof.
-move=> RR' [m mR Rm RmK]; unshelve eexists m _ _.
-- move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
-- move=> a' b /(RR' _ _)/Rm; exact.
-- move=> a a' r /=.
-  transitivity ((RR' a a')^-1 (RR' a a' r)).
-  + have := RR' a a'.
-  + rewrite [_^-1%function _]equiv_funK.
-    by reflexivity.
-
-by move=> a' b r /=; rewrite RmK [_^-1%function _]equiv_funK.
-Defined. *)
+  move=> RR' [m mR Rm RmK]; unshelve eexists m _ _.
+  - move=> a a'.
+    unshelve eexists.
+    + move /mR /(RR' _ _)^-1%equiv; exact.
+    + move=> r1 r2 rr /=.
+      admit.
+  - move=> a a'.
+    unshelve eexists.
+    + move=> /(RR' _ _) /Rm; exact.
+    + move=> r1 r2 rr /=.
+      apply preserves_rel.
+      admit.
+  - move=> a a' r /=.
+    transitivity ((RR' a a')^-1 (RR' a a' r)).
+    + admit.
+    + admit.
+Admitted.
 
 (* instances of MapN for A ~ A *)
 (* allows to build id_ParamMN : forall A, ParamMN.Rel A A *)
