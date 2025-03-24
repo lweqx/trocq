@@ -509,96 +509,69 @@ Proof. constructor. Defined.
 
 Definition id_Map1 {A : Type} `{SetoidTower A} :
   Map1.Has (fun (a a': A) => a ~ a').
-Proof. constructor. by exists idmap. Defined.
+Proof. constructor. by apply id_morphism. Defined.
 
 Definition id_Map1_sym {A : Type} `{SetoidTower A} :
   Map1.Has (sym_rel (fun (a a': A) => a ~ a')).
-Proof. constructor. by exists idmap. Defined.
+Proof. constructor. by apply id_morphism. Defined.
 
 Definition id_Map2a {A : Type} `{SetoidTower A} :
   Map2a.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /=.
-    by exists idmap.
+  - by apply id_morphism.
+  - move=> a a' ; apply id_morphism.
 Defined.
 
 Definition id_Map2a_sym {A : Type} `{SetoidTower A} :
   Map2a.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /= ; rewrite /sym_rel.
-    unshelve eexists.
-    + move=> r ; by symmetry.
-    + move=> r1 r2 rr /=.
-      admit.
-  (* move=> a b f ; rewrite /sym_rel.
-    by symmetry.
-Defined. *)
-(* TODO: fix this *)
-Admitted.
+  - by apply id_morphism.
+  - by apply inverse_morphism.
+Defined.
 
 Definition id_Map2b {A : Type} `{SetoidTower A} :
   Map2b.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /=.
-    by exists idmap.
+  - by apply id_morphism.
+  - move=> a b ; by apply id_morphism.
 Defined.
 
 Definition id_Map2b_sym {A : Type} `{SetoidTower A} :
   Map2b.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /= ; rewrite /sym_rel.
-    unshelve eexists.
-    + move=> r ; by symmetry.
-    + move=> r1 r2 rr /=.
-      admit.
-(* TODO: fix this *)
-Admitted.
+  - by apply id_morphism.
+  - move=> a b ; by apply inverse_morphism.
+Defined.
 
 Definition id_Map3 {A : Type} `{SetoidTower A} :
   Map3.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /=.
-    by exists idmap.
-  - move=> a b /=.
-    by exists idmap.
+  - by apply id_morphism.
+  - move=> a b ; by apply id_morphism.
+  - move=> a b ; by apply id_morphism.
 Defined.
 
 Definition id_Map3_sym {A : Type} `{SetoidTower A} :
   Map3.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /= ; rewrite /sym_rel.
-    unshelve eexists.
-    + move=> r ; by symmetry.
-    + move=> r1 r2 rr /=.
-      admit.
-  - move=> a b /= ; rewrite /sym_rel.
-    unshelve eexists.
-    + move=> r ; by symmetry.
-    + move=> r1 r2 rr /=.
-      admit.
-Admitted.
+  - by apply id_morphism.
+  - move=> a b ; by apply inverse_morphism.
+  - move=> a b ; by apply inverse_morphism.
+Defined.
 
 Definition id_Map4 {A : Type} `{SetoidTower A} :
   Map4.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /=.
-    by exists idmap.
-  - move=> a b /=.
-    by exists idmap.
+  - by apply id_morphism.
+  - move=> a b ; by apply id_morphism.
+  - move=> a b ; by apply id_morphism.
   - move=> a a' r ; reflexivity.
 Defined.
 
@@ -606,21 +579,13 @@ Definition id_Map4_sym {A : Type} `{SetoidTower A} :
   Map4.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
-  - by exists idmap.
-  - move=> a b /= ; rewrite /sym_rel.
-    unshelve eexists.
-    + move=> r ; by symmetry.
-    + move=> r1 r2 rr /=.
-      admit.
-  - move=> a b /= ; rewrite /sym_rel.
-    unshelve eexists.
-    + move=> r ; by symmetry.
-    + move=> r1 r2 rr /=.
-      admit.
+  - by apply id_morphism.
+  - move=> a b ; by apply inverse_morphism.
+  - move=> a b ; by apply inverse_morphism.
   - rewrite /sym_rel => a a' rel /=.
     rewrite symmetry_involutive.
     reflexivity.
-Admitted.
+Defined.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
 Elpi Accumulate lp:{{

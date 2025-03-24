@@ -28,7 +28,10 @@ Register equiv as trocq.equiv.
 
 Class SetoidTower@{i} (A: Type@{i}) := {
   level0 :: Setoid A ;
-  level1 :: forall {a b: A}, Setoid (@equiv _ level0 a b) ;
+  level1 :: forall {a b: A}, Setoid (a ~ b) ;
+
+  symmetry1_preserves_rel : forall (a b: A) (r1 r2 : a ~ b),
+    r1 ~ r2 -> r1^ ~ r2^
 }.
 
 Register SetoidTower as trocq.setoid_tower.
@@ -42,3 +45,13 @@ Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{Setoid A} `{Setoid B} 
 }.
 
 Notation "A ~> B" := (MorphismSetoid A B) (at level 99, right associativity, B at level 200).
+
+Definition id_morphism (A: Type) `{Setoid A} : A ~> A.
+Proof. by exists idmap. Defined.
+
+Definition inverse_morphism (A: Type) `{SetoidTower A} (a b: A) : (a ~ b) ~> (b ~ a).
+Proof.
+  unshelve eexists.
+  - move=> r ; by symmetry.
+  - by apply symmetry1_preserves_rel.
+Defined.
