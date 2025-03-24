@@ -26,6 +26,15 @@ Notation " f =~= g " := (forall x, f x ~ g x) (at level 70, no associativity).
 Register Setoid as trocq.setoid.
 Register equiv as trocq.equiv.
 
+Class SetoidTower@{i} (A: Type@{i}) := {
+  level0 :: Setoid A ;
+  level1 :: forall {a b: A}, Setoid (@equiv _ level0 a b) ;
+}.
+
+Register SetoidTower as trocq.setoid_tower.
+Register level0 as trocq.setoid_tower_level0.
+Register level1 as trocq.setoid_tower_level1.
+
 (* Morphism of setoids *)
 Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{Setoid A} `{Setoid B} := {
   f :> A -> B ;

@@ -43,6 +43,13 @@ setoid {{:gref lib:trocq.setoid}}.
 pred equiv o:gref.
 equiv {{:gref lib:trocq.equiv}}.
 
+pred setoid_tower o:gref.
+setoid_tower {{:gref lib:trocq.setoid_tower}}.
+
+pred setoid_tower->setoid i:int, o:gref.
+setoid_tower->setoid 0 {{:gref lib:trocq.setoid_tower_level0}}.
+setoid_tower->setoid 1 {{:gref lib:trocq.setoid_tower_level1}}.
+
 kind param-class type.
 type pc map-class -> map-class -> param-class.
 
