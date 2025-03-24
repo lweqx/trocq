@@ -41,8 +41,6 @@ Proof. typeclasses eauto. Defined.
 Lemma fun_isfun {A B : Type@{i}} (f : A -> B) : IsFun (fun x y => f x = y).
 Proof. by move=> x; eexists (f x; 1%path) => -[y]; elim. Defined.
 
-Definition sym_rel@{i} {A B : Type@{i}} (R : A -> B -> Type@{i}) := fun b a => R a b.
-
 Lemma isequiv_isfun `{Univalence} {A B : Type@{i}} (f : A -> B) :
   IsEquiv f <~> IsFun (fun x y => f y = x).
 Proof. by symmetry; apply equiv_contr_map_isequiv. Defined.
