@@ -65,7 +65,7 @@ Record Has@{i}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
-  map_in_R : forall (a : A) (b : B), map a ~ b -> R a b
+  map_in_R : forall (a : A) (b : B), map a ~ b ~> R a b
 }.
 End Map2a.
 
@@ -75,7 +75,7 @@ Record Has@{i}
   (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
-  R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
+  R_in_map : forall (a : A) (b : B), R a b ~> map a ~ b
 }.
 End Map2b.
 
@@ -85,8 +85,8 @@ Record Has@{i}
     (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
-  map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
-  R_in_map : forall (a : A) (b : B), R a b -> map a ~ b
+  map_in_R : forall (a : A) (b : B), map a ~ b ~> R a b;
+  R_in_map : forall (a : A) (b : B), R a b ~> map a ~ b
 }.
 End Map3.
 
@@ -98,8 +98,8 @@ Record Has@{i}
     (R : A -> B -> Type@{i}) `{forall a b, Setoid@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
-  map_in_R : forall (a : A) (b : B), map a ~ b -> R a b;
-  R_in_map : forall (a : A) (b : B), R a b -> map a ~ b;
+  map_in_R : forall (a : A) (b : B), map a ~ b ~> R a b;
+  R_in_map : forall (a : A) (b : B), R a b ~> map a ~ b;
   R_in_mapK : forall (a : A) (b : B), (map_in_R a b) o (R_in_map a b) =~= idmap
 }.
 End Map4.
@@ -409,6 +409,9 @@ Arguments Param44.BuildRel {A B _ _ R}.
 
 (* symmetry lemmas for Map *)
 
+(*
+TODO: to prove this, we need a different notion than 'R a a' <~> R' a a'`.
+
 Definition eq_Map0@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
     {R R' : A -> A' -> Type@{i}} `{forall a b, Setoid@{i} (R a b)} `{forall a b, Setoid@{i} (R' a b)} :
   (forall a a', R a a' <~> R' a a') ->
@@ -431,7 +434,10 @@ Definition eq_Map2a@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
   Map2a.Has@{i} R' -> Map2a.Has@{i} R.
 Proof.
   move=> RR' [m mR]; exists m.
-  move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
+  move=> a a'.
+  unshelve eexists.
+  - move /mR /(RR' _ _)^-1%equiv; exact.
+  - move=> r1 r2 rr /=.
 Defined.
 
 Definition eq_Map2b@{i} {A A' : Type@{i}} `{SetoidTower A} `{SetoidTower A'}
@@ -461,7 +467,13 @@ Proof.
 move=> RR' [m mR Rm RmK]; unshelve eexists m _ _.
 - move=> a' b /mR /(RR' _ _)^-1%equiv; exact.
 - move=> a' b /(RR' _ _)/Rm; exact.
-- by move=> a' b r /=; rewrite RmK [_^-1%function _]equiv_funK.
+- move=> a a' r /=.
+  transitivity ((RR' a a')^-1 (RR' a a' r)).
+  + have := RR' a a'.
+  + rewrite [_^-1%function _]equiv_funK.
+    by reflexivity.
+
+by move=> a' b r /=; rewrite RmK [_^-1%function _]equiv_funK.
 Defined. *)
 
 (* instances of MapN for A ~ A *)
@@ -488,7 +500,8 @@ Definition id_Map2a {A : Type} `{SetoidTower A} :
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - exact (fun a b e => e).
+  - move=> a b /=.
+    by exists idmap.
 Defined.
 
 Definition id_Map2a_sym {A : Type} `{SetoidTower A} :
@@ -496,16 +509,24 @@ Definition id_Map2a_sym {A : Type} `{SetoidTower A} :
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - move=> a b f ; rewrite /sym_rel.
+  - move=> a b /= ; rewrite /sym_rel.
+    unshelve eexists.
+    + move=> r ; by symmetry.
+    + move=> r1 r2 rr /=.
+      admit.
+  (* move=> a b f ; rewrite /sym_rel.
     by symmetry.
-Defined.
+Defined. *)
+(* TODO: fix this *)
+Admitted.
 
 Definition id_Map2b {A : Type} `{SetoidTower A} :
   Map2b.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - exact (fun a b e => e).
+  - move=> a b /=.
+    by exists idmap.
 Defined.
 
 Definition id_Map2b_sym {A : Type} `{SetoidTower A} :
@@ -513,17 +534,23 @@ Definition id_Map2b_sym {A : Type} `{SetoidTower A} :
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - move=> a b f ; rewrite /sym_rel.
-    by symmetry.
-Defined.
+  - move=> a b /= ; rewrite /sym_rel.
+    unshelve eexists.
+    + move=> r ; by symmetry.
+    + move=> r1 r2 rr /=.
+      admit.
+(* TODO: fix this *)
+Admitted.
 
 Definition id_Map3 {A : Type} `{SetoidTower A} :
   Map3.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - exact (fun a b e => e).
-  - exact (fun a b e => e).
+  - move=> a b /=.
+    by exists idmap.
+  - move=> a b /=.
+    by exists idmap.
 Defined.
 
 Definition id_Map3_sym {A : Type} `{SetoidTower A} :
@@ -531,11 +558,17 @@ Definition id_Map3_sym {A : Type} `{SetoidTower A} :
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - move=> a b f ; rewrite /sym_rel.
-    by symmetry.
-  - move=> a b f ; rewrite /sym_rel.
-    by symmetry.
-Defined.
+  - move=> a b /= ; rewrite /sym_rel.
+    unshelve eexists.
+    + move=> r ; by symmetry.
+    + move=> r1 r2 rr /=.
+      admit.
+  - move=> a b /= ; rewrite /sym_rel.
+    unshelve eexists.
+    + move=> r ; by symmetry.
+    + move=> r1 r2 rr /=.
+      admit.
+Admitted.
 
 Definition id_Map4 {A : Type} `{SetoidTower A} :
   Map4.Has (fun (a a': A) => a ~ a').
@@ -554,14 +587,20 @@ Definition id_Map4_sym {A : Type} `{SetoidTower A} :
 Proof.
   unshelve econstructor.
   - by exists idmap.
-  - move=> a b f ; rewrite /sym_rel.
-    by symmetry.
-  - move=> a b f ; rewrite /sym_rel.
-    by symmetry.
-  - rewrite /sym_rel => a a' rel.
+  - move=> a b /= ; rewrite /sym_rel.
+    unshelve eexists.
+    + move=> r ; by symmetry.
+    + move=> r1 r2 rr /=.
+      admit.
+  - move=> a b /= ; rewrite /sym_rel.
+    unshelve eexists.
+    + move=> r ; by symmetry.
+    + move=> r1 r2 rr /=.
+      admit.
+  - rewrite /sym_rel => a a' rel /=.
     rewrite symmetry_involutive.
     reflexivity.
-Defined.
+Admitted.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
 Elpi Accumulate lp:{{
