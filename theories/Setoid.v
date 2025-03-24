@@ -19,10 +19,6 @@ Class Setoid@{i} (A: Type@{i}) := {
   #[global] Setoid_Transitive :: Transitive equiv
 }.
 
-#[global] Existing Instance Setoid_Reflexive.
-#[global] Existing Instance Setoid_Symmetric.
-#[global] Existing Instance Setoid_Transitive.
-
 Notation " x ~ y " := (equiv x y) (at level 70, no associativity) : type_scope.
 Notation " x ^ " := (Setoid_Symmetric _ _ x) : type_scope.
 Notation " f =~= g " := (forall x, f x ~ g x) (at level 70, no associativity).
