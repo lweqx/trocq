@@ -43,12 +43,49 @@ setoid {{:gref lib:trocq.setoid}}.
 pred equiv o:gref.
 equiv {{:gref lib:trocq.equiv}}.
 
-pred setoid_tower o:gref.
-setoid_tower {{:gref lib:trocq.setoid_tower}}.
+% setoid_tower N = LevelN.SetoidTower
+pred setoid_tower i:int, o:gref.
+setoid_tower 0 {{:gref lib:trocq.setoid_tower0}}.
+setoid_tower 1 {{:gref lib:trocq.setoid_tower1}}.
+setoid_tower 2 {{:gref lib:trocq.setoid_tower2}}.
+setoid_tower 3 {{:gref lib:trocq.setoid_tower3}}.
 
-pred setoid_tower->setoid i:int, o:gref.
-setoid_tower->setoid 0 {{:gref lib:trocq.setoid_tower_level0}}.
-setoid_tower->setoid 1 {{:gref lib:trocq.setoid_tower_level1}}.
+% setoid_tower->setoid N M = LevelN.levelM
+pred setoid_tower->setoid i:int, i:int, o:gref.
+setoid_tower->setoid 0 0 {{:gref lib:trocq.setoid_tower0_level0}}.
+setoid_tower->setoid 1 0 {{:gref lib:trocq.setoid_tower1_level0}}.
+setoid_tower->setoid 1 1 {{:gref lib:trocq.setoid_tower1_level1}}.
+setoid_tower->setoid 2 0 {{:gref lib:trocq.setoid_tower2_level0}}.
+setoid_tower->setoid 2 1 {{:gref lib:trocq.setoid_tower2_level1}}.
+setoid_tower->setoid 2 2 {{:gref lib:trocq.setoid_tower2_level2}}.
+setoid_tower->setoid 3 0 {{:gref lib:trocq.setoid_tower3_level0}}.
+setoid_tower->setoid 3 1 {{:gref lib:trocq.setoid_tower3_level1}}.
+setoid_tower->setoid 3 2 {{:gref lib:trocq.setoid_tower3_level2}}.
+setoid_tower->setoid 3 3 {{:gref lib:trocq.setoid_tower3_level3}}.
+
+% setoid_tower->symmetry_involutive N M = LevelN.symmetryM_involutive
+pred setoid_tower->symmetry_involutive i:int, i:int, o:gref.
+setoid_tower->symmetry_involutive 1 1 {{:gref lib:trocq.setoid_tower1_symmetry1_involutive}}.
+setoid_tower->symmetry_involutive 2 1 {{:gref lib:trocq.setoid_tower2_symmetry1_involutive}}.
+setoid_tower->symmetry_involutive 2 2 {{:gref lib:trocq.setoid_tower2_symmetry2_involutive}}.
+setoid_tower->symmetry_involutive 3 1 {{:gref lib:trocq.setoid_tower3_symmetry1_involutive}}.
+setoid_tower->symmetry_involutive 3 2 {{:gref lib:trocq.setoid_tower3_symmetry2_involutive}}.
+setoid_tower->symmetry_involutive 3 3 {{:gref lib:trocq.setoid_tower3_symmetry3_involutive}}.
+
+%setoid_tower->symmetry_preserves_rel N M = LevelN.symmetryM_preserves_rel
+pred setoid_tower->symmetry_preserves_rel i:int, i:int, o:gref.
+setoid_tower->symmetry_preserves_rel 1 1 {{:gref lib:trocq.setoid_tower1_symmetry1_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel 2 1 {{:gref lib:trocq.setoid_tower2_symmetry1_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel 2 2 {{:gref lib:trocq.setoid_tower2_symmetry2_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel 3 1 {{:gref lib:trocq.setoid_tower3_symmetry1_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel 3 2 {{:gref lib:trocq.setoid_tower3_symmetry2_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel 3 3 {{:gref lib:trocq.setoid_tower3_symmetry3_preserves_rel}}.
+
+%setoid_tower->symmetry_preserves_rel_preserves_rel N M = LevelN.symmetryM_preserves_rel_preserves_rel
+pred setoid_tower->symmetry_preserves_rel_preserves_rel i:int, i:int, o:gref.
+setoid_tower->symmetry_preserves_rel_preserves_rel 2 1 {{:gref lib:trocq.setoid_tower2_symmetry1_preserves_rel_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel_preserves_rel 3 1 {{:gref lib:trocq.setoid_tower3_symmetry1_preserves_rel_preserves_rel}}.
+setoid_tower->symmetry_preserves_rel_preserves_rel 3 2 {{:gref lib:trocq.setoid_tower3_symmetry2_preserves_rel_preserves_rel}}.
 
 kind param-class type.
 type pc map-class -> map-class -> param-class.
