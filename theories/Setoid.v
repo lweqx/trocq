@@ -13,9 +13,6 @@ Class Setoid@{i} (A: Type@{i}) := {
   equiv : A -> A -> Type@{i} ;
   #[global] Setoid_Reflexive :: Reflexive equiv ;
   #[global] Setoid_Symmetric :: Symmetric equiv ;
-  symmetry_involutive {x y} (r: equiv x y):
-    (* TODO: Can this be made prettier? *)
-    Setoid_Symmetric _ _ (Setoid_Symmetric _ _ r) = r ;
   #[global] Setoid_Transitive :: Transitive equiv
 }.
 
@@ -30,6 +27,8 @@ Class SetoidTower@{i} (A: Type@{i}) := {
   level0 :: Setoid A ;
   level1 :: forall {a b: A}, Setoid (a ~ b) ;
 
+  symmetry1_involutive : forall (a b: A) (r: a ~ b),
+    (r^)^ ~ r ;
   symmetry1_preserves_rel : forall (a b: A) (r1 r2 : a ~ b),
     r1 ~ r2 -> r1^ ~ r2^
 }.

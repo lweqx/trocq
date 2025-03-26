@@ -582,8 +582,7 @@ Proof.
   - move=> a b ; by apply inverse_morphism.
   - move=> a b ; by apply inverse_morphism.
   - rewrite /sym_rel => a a' rel /=.
-    rewrite symmetry_involutive.
-    reflexivity.
+    apply symmetry1_involutive.
 Defined.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
