@@ -119,26 +119,25 @@ Register symmetry2_preserves_rel_preserves_rel as trocq.setoid_tower_symmetry2_p
 (* Morphism of setoids *)
 Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{SetoidTower2 A} `{SetoidTower2 B} := {
   f :> A -> B ;
-  preserves_rel : forall {a a'},
-    a ~ a' -> f a ~ f a' ;
-  preserves_rel_preserves_rel : forall {a a'} {aR aR': a ~ a'},
-    aR ~ aR' -> preserves_rel aR ~ preserves_rel aR'
+  preserves_rel : forall {a1 a2},
+    a1 ~ a2 -> f a1 ~ f a2
 }.
-Arguments preserves_rel {_ _ _ _} _ {a a'}.
-Arguments preserves_rel_preserves_rel {_ _ _ _} _ {a a' aR aR'}.
+Arguments preserves_rel {_ _ _ _} _ {a1 a2}.
 
 Notation "A ~> B" := (MorphismSetoid A B) (at level 99, right associativity, B at level 200).
 
 Definition id_morphism (A: Type) `{SetoidTower2 A} : A ~> A.
-Proof. by exists idmap (fun _ _ => idmap). Defined.
+Proof.
+  unshelve eexists.
+  - exact idmap.
+  - move=> ? ? ; exact idmap.
+Defined.
 
 Definition inverse_morphism (A: Type) `{SetoidTower3 A} (a b: A) :
   (a ~ b) ~> (b ~ a).
 Proof.
   unshelve eexists.
-  - move=> r ; by symmetry.
-  - move=> aR aR' aRR /=.
+  - move=> ? ; by symmetry.
+  - move=> ? ? ? /=.
     by apply symmetry1_preserves_rel.
-  - move=> aR aR' aRR aRR' aRRR /=.
-    by apply symmetry1_preserves_rel_preserves_rel.
 Defined.

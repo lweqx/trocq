@@ -437,10 +437,8 @@ Proof.
   move=> a a'.
   unshelve eexists.
   - by move /mR /(comap (RR' _ _)).
-  - move=> r1 r2 rr /=.
+  - move=> r1 r2 u /=.
     by do ! apply preserves_rel.
-  - move=> r1 r2 u1 u2 v /=.
-    by do ! apply preserves_rel_preserves_rel.
 Defined.
 
 Definition eq_Map2b@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
@@ -452,14 +450,10 @@ Proof.
   move=> a a'.
   unshelve eexists.
   - by move /(map (RR' _ _)) /Rm.
-  - move=> r1 r2 rr /=.
+  - move=> r1 r2 u /=.
     (* TODO: it's unclear why we have to give it an hint for it to work *)
     apply (preserves_rel (Rm _ _)).
     by apply preserves_rel.
-  - move=> r1 r2 u1 u2 v /=.
-    (* TODO: it's unclear why we have to give it an hint for it to work *)
-    apply (preserves_rel_preserves_rel (Rm a a')).
-    by do ! apply preserves_rel_preserves_rel.
 Defined.
 
 Definition eq_Map3@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
@@ -471,25 +465,20 @@ Proof.
   - move=> a a'.
     unshelve eexists.
     + by move /mR /(comap (RR' _ _)).
-    + move=> r1 r2 rr /=.
+    + move=> r1 r2 u /=.
       apply (preserves_rel (comap _)).
       by do ! apply preserves_rel.
-    + move=> r1 r2 u1 u2 v /=.
-      by do ! apply preserves_rel_preserves_rel.
   - move=> a a'.
     unshelve eexists.
     + by move /(map (RR' _ _)) /Rm.
-    + move=> r1 r2 rr /=.
+    + move=> r1 r2 u /=.
       (* TODO: it's unclear why we have to give it an hint for it to work *)
       apply (preserves_rel (Rm _ _)).
       by apply preserves_rel.
-    + move=> r1 r2 u1 u2 v /=.
-      (* TODO: it's unclear why we have to give it an hint for it to work *)
-      apply (preserves_rel_preserves_rel (Rm a a')).
-      by do ! apply preserves_rel_preserves_rel.
 Defined.
 
-Definition eq_Map4@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+Definition eq_Map4@{i}
+    {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
     {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map4.Has@{i} R' -> Map4.Has@{i} R.
@@ -498,11 +487,9 @@ Proof.
   - move=> a a'.
     unshelve eexists.
     + by move /mR /(comap (RR' _ _)).
-    + move=> r1 r2 rr /=.
+    + move=> r1 r2 u /=.
       apply (preserves_rel (comap _)).
       by do ! apply preserves_rel.
-    + move=> r1 r2 u1 u2 v /=.
-      by do ! apply preserves_rel_preserves_rel.
   - move=> a a'.
     unshelve eexists.
     + by move /(map (RR' _ _)) /Rm.
@@ -510,10 +497,6 @@ Proof.
       (* TODO: it's unclear why we have to give it an hint for it to work *)
       apply (preserves_rel (Rm _ _)).
       by apply preserves_rel.
-    + move=> r1 r2 u1 u2 v /=.
-      (* TODO: it's unclear why we have to give it an hint for it to work *)
-      apply (preserves_rel_preserves_rel (Rm a a')).
-      by do ! apply preserves_rel_preserves_rel.
   - move=> a a' r /=.
     transitivity (comap (RR' a a') (map (RR' a a') r)).
     + apply (preserves_rel (comap _)), RmK.
@@ -598,7 +581,9 @@ Proof.
   - by apply id_morphism.
   - move=> a b ; by apply id_morphism.
   - move=> a b ; by apply id_morphism.
-  - move=> a a' r ; reflexivity.
+  - simpl.
+  
+  move=> a a' r ; reflexivity.
 Defined.
 
 Definition id_Map4_sym {A : Type} `{SetoidTower3 A} :
