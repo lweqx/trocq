@@ -48,16 +48,16 @@ Module Map0.
 Set Warnings "-non-primitive-record".
 Record Has@{i}
   (* TODO: the tower height for A can be reduced to only 3, should we do it? *)
-  {A B : Type@{i}} `{Height3.SetoidTower@{i} A} `{Height3.SetoidTower@{i} B}
-  (R : A -> B -> Type@{i}) `{forall a b, Height2.SetoidTower@{i} (R a b)} :=
+  {A B : Type@{i}} `{SetoidTower3@{i} A} `{SetoidTower3@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, SetoidTower2@{i} (R a b)} :=
 BuildHas {
 }.
 End Map0.
 
 Module Map1.
 Record Has@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower@{i} A} `{Height3.SetoidTower@{i} B}
-  (R : A -> B -> Type@{i}) `{forall a b, Height2.SetoidTower@{i} (R a b)} :=
+  {A B : Type@{i}} `{SetoidTower3@{i} A} `{SetoidTower3@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, SetoidTower2@{i} (R a b)} :=
 BuildHas {
   map : A ~> B
 }.
@@ -65,8 +65,8 @@ End Map1.
 
 Module Map2a.
 Record Has@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower@{i} A} `{Height3.SetoidTower@{i} B}
-  (R : A -> B -> Type@{i}) `{forall a b, Height2.SetoidTower@{i} (R a b)} :=
+  {A B : Type@{i}} `{SetoidTower3@{i} A} `{SetoidTower3@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, SetoidTower2@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
   map_in_R : forall (a : A) (b : B), map a ~ b ~> R a b
@@ -75,8 +75,8 @@ End Map2a.
 
 Module Map2b.
 Record Has@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower@{i} A} `{Height3.SetoidTower@{i} B}
-  (R : A -> B -> Type@{i}) `{forall a b, Height2.SetoidTower@{i} (R a b)} :=
+  {A B : Type@{i}} `{SetoidTower3@{i} A} `{SetoidTower3@{i} B}
+  (R : A -> B -> Type@{i}) `{forall a b, SetoidTower2@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
   R_in_map : forall (a : A) (b : B), R a b ~> map a ~ b
@@ -85,8 +85,8 @@ End Map2b.
 
 Module Map3.
 Record Has@{i}
-    {A B : Type@{i}} `{Height3.SetoidTower@{i} A} `{Height3.SetoidTower@{i} B}
-    (R : A -> B -> Type@{i}) `{forall a b, Height2.SetoidTower@{i} (R a b)} :=
+    {A B : Type@{i}} `{SetoidTower3@{i} A} `{SetoidTower3@{i} B}
+    (R : A -> B -> Type@{i}) `{forall a b, SetoidTower2@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
   map_in_R : forall (a : A) (b : B), map a ~ b ~> R a b;
@@ -98,8 +98,8 @@ Module Map4.
 (* An alternative presentation of Sozeau, Tabareau, Tanter's univalent parametricity:
    symmetrical and transport-free *)
 Record Has@{i}
-    {A B : Type@{i}} `{Height3.SetoidTower@{i} A} `{Height3.SetoidTower@{i} B}
-    (R : A -> B -> Type@{i}) `{forall a b, Height2.SetoidTower@{i} (R a b)} :=
+    {A B : Type@{i}} `{SetoidTower3@{i} A} `{SetoidTower3@{i} B}
+    (R : A -> B -> Type@{i}) `{forall a b, SetoidTower2@{i} (R a b)} :=
 BuildHas {
   map : A ~> B;
   map_in_R : forall (a : A) (b : B), map a ~ b ~> R a b;
@@ -254,32 +254,32 @@ Elpi Query lp:{{
 (********************)
 
 Coercion forgetMap43@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower B} {R : A -> B -> Type@{i}} `{forall a b, Height2.SetoidTower@{i} (R a b)}
+  {A B : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 B} {R : A -> B -> Type@{i}} `{forall a b, SetoidTower2@{i} (R a b)}
   (m : Map4.Has@{i} R) : Map3.Has@{i} R :=
     Map3.BuildHas _ _ _ _ R _ (Map4.map R m) (Map4.map_in_R R m) (Map4.R_in_map R m).
 
 Coercion forgetMap32a@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower B} {R : A -> B -> Type@{i}} `{forall a b, Height2.SetoidTower@{i} (R a b)}
+  {A B : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 B} {R : A -> B -> Type@{i}} `{forall a b, SetoidTower2@{i} (R a b)}
   (m : Map3.Has@{i} R) : Map2a.Has@{i} R :=
     Map2a.BuildHas _ _ _ _ R _ (Map3.map R m) (Map3.map_in_R R m).
 
 Coercion forgetMap32b@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower B} {R : A -> B -> Type@{i}} `{forall a b, Height2.SetoidTower@{i} (R a b)}
+  {A B : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 B} {R : A -> B -> Type@{i}} `{forall a b, SetoidTower2@{i} (R a b)}
   (m : Map3.Has@{i} R) : Map2b.Has@{i} R :=
     Map2b.BuildHas _ _ _ _ R _ (Map3.map R m) (Map3.R_in_map R m).
 
 Coercion forgetMap2a1@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower B} {R : A -> B -> Type@{i}} `{forall a b, Height2.SetoidTower@{i} (R a b)}
+  {A B : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 B} {R : A -> B -> Type@{i}} `{forall a b, SetoidTower2@{i} (R a b)}
   (m : Map2a.Has@{i} R) : Map1.Has@{i} R :=
     Map1.BuildHas _ _ _ _ R _ (Map2a.map R m).
 
 Coercion forgetMap2b1@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower B} {R : A -> B -> Type@{i}} `{forall a b, Height2.SetoidTower@{i} (R a b)}
+  {A B : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 B} {R : A -> B -> Type@{i}} `{forall a b, SetoidTower2@{i} (R a b)}
   (m : Map2b.Has@{i} R) : Map1.Has@{i} R :=
     Map1.BuildHas _ _ _ _ R _ (Map2b.map R m).
 
 Coercion forgetMap10@{i}
-  {A B : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower B} {R : A -> B -> Type@{i}} `{forall a b, Height2.SetoidTower@{i} (R a b)}
+  {A B : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 B} {R : A -> B -> Type@{i}} `{forall a b, SetoidTower2@{i} (R a b)}
   (m : Map1.Has@{i} R) : Map0.Has@{i} R :=
     Map0.BuildHas _ _ _ _ R _.
 
@@ -365,34 +365,34 @@ Elpi Query lp:{{
 
 (* General projections *)
 
-Definition rel {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param00.Rel A B _ _) :=
+Definition rel {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param00.Rel A B _ _) :=
   Param00.R A B _ _ R.
 Coercion rel : Param00.Rel >-> Funclass.
-Definition setoid_rel {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param00.Rel A B _ _) :=
+Definition setoid_rel {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param00.Rel A B _ _) :=
   Param00.setoidR A B _ _ R.
 #[global] Existing Instance setoid_rel.
 
-Definition map {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param10.Rel A B _ _) : A ~> B :=
+Definition map {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param10.Rel A B _ _) : A ~> B :=
   Map1.map _ (Param10.covariant A B _ _ R).
-Definition map_in_R {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param2a0.Rel A B _ _) :
+Definition map_in_R {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param2a0.Rel A B _ _) :
   forall (a : A) (b : B), map R a ~ b -> R a b :=
   Map2a.map_in_R _ (Param2a0.covariant A B _ _ R).
-Definition R_in_map {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param2b0.Rel A B _ _) :
+Definition R_in_map {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param2b0.Rel A B _ _) :
   forall (a : A) (b : B), R a b -> map R a ~ b :=
   Map2b.R_in_map _ (Param2b0.covariant A B _ _ R).
-Definition R_in_mapK {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param40.Rel A B _ _) :
+Definition R_in_mapK {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param40.Rel A B _ _) :
   forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) =~= idmap :=
   Map4.R_in_mapK _ (Param40.covariant A B _ _ R).
 
-Definition comap {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param01.Rel A B _ _) : B ~> A :=
+Definition comap {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param01.Rel A B _ _) : B ~> A :=
   Map1.map _ (Param01.contravariant A B _ _ R).
-Definition comap_in_R {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param02a.Rel A B _ _) :
+Definition comap_in_R {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param02a.Rel A B _ _) :
   forall (b : B) (a : A), comap R b ~ a -> R a b :=
   Map2a.map_in_R _ (Param02a.contravariant A B _ _ R).
-Definition R_in_comap {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param02b.Rel A B _ _) :
+Definition R_in_comap {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param02b.Rel A B _ _) :
   forall (b : B) (a : A), R a b -> comap R b ~ a :=
   Map2b.R_in_map _ (Param02b.contravariant A B _ _ R).
-Definition R_in_comapK {A B} `{Height3.SetoidTower A} `{Height3.SetoidTower B} (R : Param04.Rel A B _ _) :
+Definition R_in_comapK {A B} `{SetoidTower3 A} `{SetoidTower3 B} (R : Param04.Rel A B _ _) :
   forall (b : B) (a : A), (comap_in_R R b a) o (R_in_comap R b a) =~= idmap :=
   Map4.R_in_mapK _ (Param04.contravariant A B _ _ R).
 
@@ -412,24 +412,24 @@ Arguments Param44.BuildRel {A B _ _ R}.
 
 (* symmetry lemmas for Map *)
 
-Definition eq_Map0@{i} {A A' : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower A'}
-    {R R' : A -> A' -> Type@{i}} `{forall a b, Height3.SetoidTower@{i} (R a b)} `{forall a b, Height3.SetoidTower@{i} (R' a b)} :
+Definition eq_Map0@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map0.Has@{i} R' -> Map0.Has@{i} R.
 Proof.
   move=> RR' []; exists.
 Defined.
 
-Definition eq_Map1@{i} {A A' : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower A'}
-    {R R' : A -> A' -> Type@{i}} `{forall a b, Height3.SetoidTower@{i} (R a b)} `{forall a b, Height3.SetoidTower@{i} (R' a b)} :
+Definition eq_Map1@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map1.Has@{i} R' -> Map1.Has@{i} R.
 Proof.
   move=> RR' [m]; exists. exact.
 Defined.
 
-Definition eq_Map2a@{i} {A A' : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower A'}
-    {R R' : A -> A' -> Type@{i}} `{forall a b, Height3.SetoidTower@{i} (R a b)} `{forall a b, Height3.SetoidTower@{i} (R' a b)} :
+Definition eq_Map2a@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map2a.Has@{i} R' -> Map2a.Has@{i} R.
 Proof.
@@ -438,17 +438,13 @@ Proof.
   unshelve eexists.
   - by move /mR /(comap (RR' _ _)).
   - move=> r1 r2 rr /=.
-    (* TODO: it's unclear why we have to give it an hint for it to work *)
-    apply (preserves_rel (comap _)).
     by do ! apply preserves_rel.
   - move=> r1 r2 u1 u2 v /=.
-    (* TODO: it's unclear why we have to give it an hint for it to work *)
-    apply (preserves_rel_preserves_rel (comap _)).
     by do ! apply preserves_rel_preserves_rel.
 Defined.
 
-Definition eq_Map2b@{i} {A A' : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower A'}
-    {R R' : A -> A' -> Type@{i}} `{forall a b, Height3.SetoidTower@{i} (R a b)} `{forall a b, Height3.SetoidTower@{i} (R' a b)} :
+Definition eq_Map2b@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map2b.Has@{i} R' -> Map2b.Has@{i} R.
 Proof.
@@ -466,8 +462,8 @@ Proof.
     by do ! apply preserves_rel_preserves_rel.
 Defined.
 
-Definition eq_Map3@{i} {A A' : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower A'}
-    {R R' : A -> A' -> Type@{i}} `{forall a b, Height3.SetoidTower@{i} (R a b)} `{forall a b, Height3.SetoidTower@{i} (R' a b)} :
+Definition eq_Map3@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map3.Has@{i} R' -> Map3.Has@{i} R.
 Proof.
@@ -479,8 +475,6 @@ Proof.
       apply (preserves_rel (comap _)).
       by do ! apply preserves_rel.
     + move=> r1 r2 u1 u2 v /=.
-      (* TODO: it's unclear why we have to give it an hint for it to work *)
-      apply (preserves_rel_preserves_rel (comap _)).
       by do ! apply preserves_rel_preserves_rel.
   - move=> a a'.
     unshelve eexists.
@@ -495,8 +489,8 @@ Proof.
       by do ! apply preserves_rel_preserves_rel.
 Defined.
 
-Definition eq_Map4@{i} {A A' : Type@{i}} `{Height3.SetoidTower A} `{Height3.SetoidTower A'}
-    {R R' : A -> A' -> Type@{i}} `{forall a b, Height3.SetoidTower@{i} (R a b)} `{forall a b, Height3.SetoidTower@{i} (R' a b)} :
+Definition eq_Map4@{i} {A A' : Type@{i}} `{SetoidTower3 A} `{SetoidTower3 A'}
+    {R R' : A -> A' -> Type@{i}} `{forall a b, SetoidTower3@{i} (R a b)} `{forall a b, SetoidTower3@{i} (R' a b)} :
   (forall a a', R a a' <=> R' a a') ->
   Map4.Has@{i} R' -> Map4.Has@{i} R.
 Proof.
@@ -508,8 +502,6 @@ Proof.
       apply (preserves_rel (comap _)).
       by do ! apply preserves_rel.
     + move=> r1 r2 u1 u2 v /=.
-      (* TODO: it's unclear why we have to give it an hint for it to work *)
-      apply (preserves_rel_preserves_rel (comap _)).
       by do ! apply preserves_rel_preserves_rel.
   - move=> a a'.
     unshelve eexists.
@@ -528,28 +520,28 @@ Proof.
     + apply (R_in_comap (RR' a a')).
       apply (map_in_R (RR' a a')).
       by reflexivity.
-Qed.
+Defined.
 
 (* instances of MapN for A ~ A *)
 (* allows to build id_ParamMN : forall A, ParamMN.Rel A A *)
 
-Definition id_Map0 {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map0 {A : Type} `{SetoidTower3 A} :
   Map0.Has (fun (a a': A) => a ~ a').
 Proof. constructor. Defined.
 
-Definition id_Map0_sym {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map0_sym {A : Type} `{SetoidTower3 A} :
   Map0.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof. constructor. Defined.
 
-Definition id_Map1 {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map1 {A : Type} `{SetoidTower3 A} :
   Map1.Has (fun (a a': A) => a ~ a').
 Proof. constructor. by apply id_morphism. Defined.
 
-Definition id_Map1_sym {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map1_sym {A : Type} `{SetoidTower3 A} :
   Map1.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof. constructor. by apply id_morphism. Defined.
 
-Definition id_Map2a {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map2a {A : Type} `{SetoidTower3 A} :
   Map2a.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
@@ -557,7 +549,7 @@ Proof.
   - move=> a a' ; apply id_morphism.
 Defined.
 
-Definition id_Map2a_sym {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map2a_sym {A : Type} `{SetoidTower3 A} :
   Map2a.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
@@ -565,7 +557,7 @@ Proof.
   - by apply inverse_morphism.
 Defined.
 
-Definition id_Map2b {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map2b {A : Type} `{SetoidTower3 A} :
   Map2b.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
@@ -573,7 +565,7 @@ Proof.
   - move=> a b ; by apply id_morphism.
 Defined.
 
-Definition id_Map2b_sym {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map2b_sym {A : Type} `{SetoidTower3 A} :
   Map2b.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
@@ -581,7 +573,7 @@ Proof.
   - move=> a b ; by apply inverse_morphism.
 Defined.
 
-Definition id_Map3 {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map3 {A : Type} `{SetoidTower3 A} :
   Map3.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
@@ -590,7 +582,7 @@ Proof.
   - move=> a b ; by apply id_morphism.
 Defined.
 
-Definition id_Map3_sym {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map3_sym {A : Type} `{SetoidTower3 A} :
   Map3.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
@@ -599,7 +591,7 @@ Proof.
   - move=> a b ; by apply inverse_morphism.
 Defined.
 
-Definition id_Map4 {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map4 {A : Type} `{SetoidTower3 A} :
   Map4.Has (fun (a a': A) => a ~ a').
 Proof.
   unshelve econstructor.
@@ -609,7 +601,7 @@ Proof.
   - move=> a a' r ; reflexivity.
 Defined.
 
-Definition id_Map4_sym {A : Type} `{Height3.SetoidTower A} :
+Definition id_Map4_sym {A : Type} `{SetoidTower3 A} :
   Map4.Has (sym_rel (fun (a a': A) => a ~ a')).
 Proof.
   unshelve econstructor.
@@ -617,7 +609,7 @@ Proof.
   - move=> a b ; by apply inverse_morphism.
   - move=> a b ; by apply inverse_morphism.
   - rewrite /sym_rel => a a' rel /=.
-    apply Height3.symmetry1_involutive.
+    apply symmetry1_involutive.
 Defined.
 
 (* generate id_ParamMN : forall A, ParamMN.Rel A A for all M N *)
@@ -640,14 +632,21 @@ Elpi Accumulate lp:{{
     SetoidTower = pglobal {setoid_tower 3} UI,
     Equiv = pglobal {equiv} UI,
 
-    Tower3ToHeight0 = pglobal {setoid_tower->setoid 3 0} UI,
+    Tower1ToTower0 = pglobal {lower_setoid_tower 1} UI,
+    Tower2ToTower1 = pglobal {lower_setoid_tower 2} UI,
+    Tower3ToTower2 = pglobal {lower_setoid_tower 3} UI,
+    Tower3ToHeight0 = pglobal {setoid_tower->setoid 0} UI,
+    Tower3ToTower0 = {{
+      fun (A: lp:TypeU) (SA: lp:SetoidTower A) =>
+        lp:Tower1ToTower0 A (lp:Tower2ToTower1 A (lp:Tower3ToTower2 A SA))
+    }},
     Tower3ToTower2Rel = pglobal {coq.locate "tower_3_to_2_rel"} UI,
 
     @udecl! [L] ff [] ff =>
       coq.env.add-const {calc ("id_Param" ^ MStr ^ NStr)} {{
         fun (A: lp:TypeU) (SA: lp:SetoidTower A) =>
           lp:BuildRel_UI A A SA SA
-            (lp:Equiv A (lp:Tower3ToHeight0 A SA))
+            (lp:Equiv A (lp:Tower3ToHeight0 A (lp:Tower3ToTower0 A SA)))
             (fun (a a': A) => lp:Tower3ToTower2Rel A a a' SA)
             (lp:IdMap_UI A SA) (lp:IdMapSym_UI A SA)
       }} _ @transparent! _.
