@@ -63,6 +63,19 @@ Class SetoidTower3@{i} (A: Type@{i}) := {
 }.
 
 #[global]
+Instance tower_1_to_0_rel@{i} {A: Type@{i}} {a a': A}:
+  forall `{SetoidTower1 A}, SetoidTower0 (a ~ a').
+Proof.
+  move=> [
+    tower0
+    level1 symmetry1_involutive symmetry1_preserves_rel
+  ].
+
+  unshelve eexists.
+  apply level1.
+Defined.
+
+#[global]
 Instance tower_2_to_1_rel@{i} {A: Type@{i}} {a a': A}:
   forall `{SetoidTower2 A}, SetoidTower1 (a ~ a').
 Proof.
@@ -72,9 +85,7 @@ Proof.
   ].
 
   unshelve eexists.
-  - exists ; exact level1.
-  - apply level2.
-  - apply (symmetry2_involutive _ _).
+  - apply symmetry2_involutive.
   - apply symmetry1_preserves_rel.
 Defined.
 
@@ -117,7 +128,7 @@ Register symmetry3_preserves_rel as trocq.setoid_tower_symmetry3_preserves_rel.
 Register symmetry2_preserves_rel_preserves_rel as trocq.setoid_tower_symmetry2_preserves_rel_preserves_rel.
 
 (* Morphism of setoids *)
-Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{SetoidTower2 A} `{SetoidTower2 B} := {
+Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{SetoidTower0 A} `{SetoidTower0 B} := {
   f :> A -> B ;
   preserves_rel : forall {a1 a2},
     a1 ~ a2 -> f a1 ~ f a2
@@ -126,14 +137,14 @@ Arguments preserves_rel {_ _ _ _} _ {a1 a2}.
 
 Notation "A ~> B" := (MorphismSetoid A B) (at level 99, right associativity, B at level 200).
 
-Definition id_morphism (A: Type) `{SetoidTower2 A} : A ~> A.
+Definition id_morphism (A: Type) `{SetoidTower0 A} : A ~> A.
 Proof.
   unshelve eexists.
   - exact idmap.
   - move=> ? ? ; exact idmap.
 Defined.
 
-Definition inverse_morphism (A: Type) `{SetoidTower3 A} (a b: A) :
+Definition inverse_morphism (A: Type) `{SetoidTower1 A} (a b: A) :
   (a ~ b) ~> (b ~ a).
 Proof.
   unshelve eexists.
