@@ -170,9 +170,10 @@ Elpi Accumulate lp:{{
     SetoidTower1 = pglobal {setoid_tower 1} UI,
 
     RelDecl =
-      parameter "A" _ TypeU (a\
-      parameter "B" _ TypeU (b\
-      % TODO: make sA and sB implicit
+      % The `maximal` below actually make sA and sB implicit.
+      % TODO: is this is a bug?
+      parameter "A" maximal TypeU (a\
+      parameter "B" maximal TypeU (b\
       parameter "sA" _ {{lp:SetoidTower1 lp:a}} (tower_a\
       parameter "sB" _ {{lp:SetoidTower1 lp:b}} (tower_b\
       record "Rel" (sort (typ {coq.univ.super U})) "BuildRel" (
@@ -366,34 +367,34 @@ Elpi Query lp:{{
 
 (* General projections *)
 
-Definition rel {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param00.Rel A B _ _) :=
+Definition rel {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param00.Rel A B) :=
   Param00.R A B _ _ R.
 Coercion rel : Param00.Rel >-> Funclass.
-Definition setoid_rel {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param00.Rel A B _ _) :=
+Definition setoid_rel {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param00.Rel A B) :=
   Param00.setoidR A B _ _ R.
 #[global] Existing Instance setoid_rel.
 
-Definition map {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param10.Rel A B _ _) : A ~> B :=
+Definition map {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param10.Rel A B) : A ~> B :=
   Map1.map _ (Param10.covariant A B _ _ R).
-Definition map_in_R {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param2a0.Rel A B _ _) :
+Definition map_in_R {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param2a0.Rel A B) :
   forall (a : A) (b : B), map R a ~ b -> R a b :=
   Map2a.map_in_R _ (Param2a0.covariant A B _ _ R).
-Definition R_in_map {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param2b0.Rel A B _ _) :
+Definition R_in_map {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param2b0.Rel A B) :
   forall (a : A) (b : B), R a b -> map R a ~ b :=
   Map2b.R_in_map _ (Param2b0.covariant A B _ _ R).
-Definition R_in_mapK {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param40.Rel A B _ _) :
+Definition R_in_mapK {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param40.Rel A B) :
   forall (a : A) (b : B), (map_in_R R a b) o (R_in_map R a b) =~= idmap :=
   Map4.R_in_mapK _ (Param40.covariant A B _ _ R).
 
-Definition comap {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param01.Rel A B _ _) : B ~> A :=
+Definition comap {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param01.Rel A B) : B ~> A :=
   Map1.map _ (Param01.contravariant A B _ _ R).
-Definition comap_in_R {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param02a.Rel A B _ _) :
+Definition comap_in_R {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param02a.Rel A B) :
   forall (b : B) (a : A), comap R b ~ a -> R a b :=
   Map2a.map_in_R _ (Param02a.contravariant A B _ _ R).
-Definition R_in_comap {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param02b.Rel A B _ _) :
+Definition R_in_comap {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param02b.Rel A B) :
   forall (b : B) (a : A), R a b -> comap R b ~ a :=
   Map2b.R_in_map _ (Param02b.contravariant A B _ _ R).
-Definition R_in_comapK {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param04.Rel A B _ _) :
+Definition R_in_comapK {A B} `{SetoidTower1 A} `{SetoidTower1 B} (R : Param04.Rel A B) :
   forall (b : B) (a : A), (comap_in_R R b a) o (R_in_comap R b a) =~= idmap :=
   Map4.R_in_mapK _ (Param04.contravariant A B _ _ R).
 
@@ -405,7 +406,7 @@ Delimit Scope param_scope with P.
 
 Notation UParam := Param44.Rel.
 Notation MkUParam := Param44.BuildRel.
-Notation "A <=> B" := (Param44.Rel A B _ _) : param_scope.
+Notation "A <=> B" := (Param44.Rel A B) : param_scope.
 Notation IsUMap := Map4.Has.
 Notation MkUMap := Map4.BuildHas.
 Arguments Map4.BuildHas {A B _ _ R}.
