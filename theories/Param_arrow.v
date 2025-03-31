@@ -28,89 +28,99 @@ Elpi Accumulate File util.
 Elpi Accumulate Db trocq.db.
 Elpi Accumulate File param_class.
 
-(* setoid for arrow *)
-
-#[global]
-Instance SetoidArrow@{i j l k | i <= l, j <= l, l <= k} `{Funext}
-  {A: Type@{i}} `{Setoid A} {B: Type@{j}} `{Setoid B} :
-  Setoid@{k} (A ~> B).
-Proof.
-  unshelve eexists.
-  - exact (fun f f' => forall a a', a ~ a' -> f a ~ f' a').
-  - move=> f g /= Sfg a a' r.
-    exact (Sfg a' a r^)^.
-  - move=> f /=.
-    apply preserves_rel.
-  - move=> f g /= fg_preservation.
-    do ! apply path_forall=> ?.
-    rewrite !symmetry_involutive //. 
-  - move=> f g h R_fg R_gh a a' aR.
-    transitivity (g a); first by apply R_fg.
-    transitivity (g a'); last by apply R_gh.
-    by apply preserves_rel.
-Defined.
-
 (* relation for arrow *)
 
 Definition R_arrow@{i j}
-  {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param00.Rel@{i} A A' SA SA')
-  {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param00.Rel@{j} B B' SB SB') :=
-    fun (f: A ~> B) (f': A' ~> B') =>
-      forall a a', (PA a a') ~> (PB (f a) (f' a')
-    ).
+  {A A' : Type@{i}} {SA: SetoidTower2 A} {SA': SetoidTower2 A'} (PA : Param00.Rel@{i} A A')
+  {B B' : Type@{j}} {SB: SetoidTower2 B} {SB': SetoidTower2 B'} (PB : Param00.Rel@{j} B B') :=
+    fun (f: A ~>' B) (f': A' ~>' B') =>
+      forall a a', (PA a a') ~>' (PB (f a) (f' a')).
+
+(* setoid tower for arrow *)
 
 #[global]
-Instance SetoidRArrow@{i j l k | i <= l, j <= l, l <= k}
-    {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param00.Rel@{i} A A' SA SA')
-    {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param00.Rel@{j} B B' SB SB')
-    (f: A ~> B) (g: A' ~> B') :
-  Setoid@{k} (R_arrow PA PB f g).
+Instance SetoidTower0_Rarrow@{i j l k | i <= l, j <= l, l <= k}
+    {A A' : Type@{i}} {SA: SetoidTower2 A} {SA': SetoidTower2 A'} (PA : Param00.Rel@{i} A A')
+    {B B' : Type@{j}} {SB: SetoidTower2 B} {SB': SetoidTower2 B'} (PB : Param00.Rel@{j} B B')
+    (f: A ~>' B) (g: A' ~>' B') :
+  SetoidTower0@{k} (R_arrow PA PB f g).
 Proof.
+  exists.
   unshelve eexists.
-  - exact (fun x y => x = y). (* TODO: this is really what we want to use? *)
-  - move=> ? ? ? ; by symmetry.
-  - move=> ? ; by reflexivity.
-  - move=> ? ? ? ; apply inv_V.
-  - move=> ? p2 ? ? ? ; by transitivity p2.
+  - rewrite /R_arrow => r1 r2.
+    exact (forall a a' (u1 u2: PA a a'), u1 ~ u2 -> r1 _ _ u1 ~ r2 _ _ u2).
+  - rewrite /R_arrow => /= Rfg a a' u1 u2 v.
+    by apply (preserves_rel' (Rfg a a')).
+  - move=> ? ? r ? ? ? ? ? ;
+    symmetry ; apply r ; symmetry ; done.
+  - move=> r1 r2 r3 r12 r23 a a' u1 u2 v.
+    transitivity (r2 a a' u2).
+    + by apply r12.
+    + by apply r23.
 Defined.
 
 (* MapN for arrow *)
 
 (* (00, 00) -> 00 *)
 Definition Map0_arrow@{i j l k | i <= l, j <= l, l <= k} `{Funext}
-  {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param00.Rel@{i} A A' SA SA')
-  {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param00.Rel@{j} B B' SB SB') :
+  {A A' : Type@{i}} {SA: SetoidTower2 A} {SA': SetoidTower2 A'} (PA : Param00.Rel@{i} A A')
+  {B B' : Type@{j}} {SB: SetoidTower2 B} {SB': SetoidTower2 B'} (PB : Param00.Rel@{j} B B') :
     Map0.Has@{k} (R_arrow@{i j} PA PB).
 Proof. exists. Defined.
 
 (* (01, 10) -> 10 *)
 Definition Map1_arrow@{i j l k | i <= l, j <= l, l <= k} `{Funext}
-  {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param01.Rel@{i} A A' SA SA')
-  {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param10.Rel@{j} B B' SB SB') :
+  {A A' : Type@{i}} {SA: SetoidTower2 A} {SA': SetoidTower2 A'} (PA : Param01.Rel@{i} A A')
+  {B B' : Type@{j}} {SB: SetoidTower2 B} {SB': SetoidTower2 B'} (PB : Param10.Rel@{j} B B') :
     Map1.Has@{k} (R_arrow@{i j} PA PB).
 Proof.
   exists.
   unshelve eexists.
-  - move=> f ; exists (fun a' => map PB (f (comap PA a'))).
-    move=> a a' r.
-    by do ! apply preserves_rel.
-  - move=> /= f g r_fg.
-    move=> a a' r.
-    by apply preserves_rel, r_fg, preserves_rel.
+  - move=> f.
+    unshelve eexists.
+    + exact (fun a' => map PB (f (comap PA a'))).
+    + move=> a1 a2 u /=.
+      by do ! apply preserves_rel'.
+    + move=> a1 a2 u1 u2 v /=.
+      by do ! apply preserves_rel'_preserves_rel.
+  - move=> /= f g r_fg a a'.
+    unshelve eexists.
+    + move=> r.
+      by apply preserves_rel', r_fg, preserves_rel'.
+    + move=> u1 u2 v /=.
+      apply preserves_rel'_preserves_rel.
+      apply (preserves_rel (r_fg _ _)).
+      by apply preserves_rel'_preserves_rel.
+  - move=> a1 a2 u1 u2 v a a' u1' u2' v' /=.
+    apply preserves_rel'_preserves_rel.
+    apply v.
+    by apply preserves_rel'_preserves_rel.
 Defined.
 
 (* (02b, 2a0) -> 2a0 *)
 Definition Map2a_arrow@{i j l k | i <= l, j <= l, l <= k} `{Funext}
-  {A A' : Type@{i}} {SA: Setoid A} {SA': Setoid A'} (PA : Param02b.Rel@{i} A A' SA SA')
-  {B B' : Type@{j}} {SB: Setoid B} {SB': Setoid B'} (PB : Param2a0.Rel@{j} B B' SB SB') :
+  {A A' : Type@{i}} {SA: SetoidTower2 A} {SA': SetoidTower2 A'} (PA : Param02b.Rel@{i} A A')
+  {B B' : Type@{j}} {SB: SetoidTower2 B} {SB': SetoidTower2 B'} (PB : Param2a0.Rel@{j} B B') :
     Map2a.Has@{k} (R_arrow@{i j} PA PB).
 Proof.
   exists (Map1.map@{k} _ (Map1_arrow PA PB)).
-  move=> f f' /= e a a' aR; apply (map_in_R PB).
-  transitivity (map PB (f (comap PA a'))).
-  - do ! apply preserves_rel.
-    symmetry; by apply R_in_comap.
-  - apply e ; by reflexivity.
+  move=> f f' /=.
+  unshelve eexists.
+  - rewrite /R_arrow => e a a'.
+    unshelve eexists.
+    + move=> aR; apply (map_in_R PB).
+      transitivity (map PB (f (comap PA a'))).
+      * do ! apply preserves_rel'.
+        symmetry; by apply R_in_comap.
+      * apply e ; by reflexivity.
+    + move=> p1 p2 pR /=.
+      have := map_in_R PB (f a) (f' a').
+      apply (preserves_rel (map_in_R PB (f a) (f' a'))).
+      apply transitivity11_preserves_rel.
+      do ! apply preserves_rel'_preserves_rel.
+      apply symmetry1_preserves_rel.
+      by apply (preserves_rel (R_in_comap PA a' a)).
+    + move=> a1 a2 u1 u2 v /=.
 Defined.
 
 (* (02a, 2b0) + funext -> 2b0 *)
@@ -147,10 +157,13 @@ Proof.
     (Map1.map@{k} _ (Map1_arrow PA PB))
     (Map2a.map_in_R _ (Map2a_arrow PA PB))
     (Map2b.R_in_map _ (Map2b_arrow PA PB)).
-  move=> f f' fR /=.
-  apply path_forall@{i k k} => a.
-  apply path_forall@{i k k} => a'.
-  apply path_arrow@{i k k} => aR /=.
+  move=> f f' fR /= a a' aR.
+  transitivity (fR a a' (comap_in_R PA a' a (R_in_comap PA a' a aR))).
+  - admit.
+  - have := fR a a'.
+  
+  apply preserves_rel.
+  transitivity (comap_in_R _ _ _ (R_in_comap _ _ _ (fR a a' aR))).
   (* This rewrite fails, because R_in_comapK only gives a property of ~ while
      the setoid defined on elements on R_forall _ _ uses the equality relation.
      Hmm... *)

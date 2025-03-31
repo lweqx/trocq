@@ -34,7 +34,11 @@ Class SetoidTower1@{i} (A: Type@{i}) := {
   symmetry1_involutive : forall {a b: A} {r: a ~ b},
     (r^)^ ~ r ;
   symmetry1_preserves_rel : forall {a b: A} {r1 r2: a ~ b},
-    r1 ~ r2 -> r1^ ~ r2^
+    r1 ~ r2 -> r1^ ~ r2^ ;
+  transitivity11_preserves_rel : forall {a b c: A} {r1 r1': a ~ b} {r2: b ~ c},
+    r1 ~ r1' -> Setoid_Transitive _ _ _ r1 r2 ~ Setoid_Transitive _ _ _ r1' r2 ;
+  transitivity12_preserves_rel : forall {a b c: A} {r1: a ~ b} {r2 r2': b ~ c},
+    r2 ~ r2' -> Setoid_Transitive _ _ _ r1 r2 ~ Setoid_Transitive _ _ _ r1 r2'
 }.
 
 Class SetoidTower2@{i} (A: Type@{i}) := {
@@ -45,6 +49,10 @@ Class SetoidTower2@{i} (A: Type@{i}) := {
     (u^)^ ~ u ;
   symmetry2_preserves_rel : forall {a b: A} {r1 r2 : a ~ b} {u1 u2: r1 ~ r2},
     u1 ~ u2 -> u1^ ~ u2^ ;
+  transitivity21_preserves_rel : forall {a b: A} {r1 r2 r3: a ~ b} {u1 u1': r1 ~ r2} {u2: r2 ~ r3},
+    u1 ~ u1' -> Setoid_Transitive _ _ _ u1 u2 ~ Setoid_Transitive _ _ _ u1' u2 ;
+  transitivity22_preserves_rel : forall {a b: A} {r1 r2 r3: a ~ b} {u1: r1 ~ r2} {u2 u2': r2 ~ r3},
+    u2 ~ u2' -> Setoid_Transitive _ _ _ u1 u2 ~ Setoid_Transitive _ _ _ u1 u2' ;
   symmetry1_preserves_rel_preserves_rel : forall {a b: A} {r1 r2: a ~ b} {u1 u2: r1 ~ r2},
     u1 ~ u2 -> symmetry1_preserves_rel u1 ~ symmetry1_preserves_rel u2
 }.
@@ -58,6 +66,10 @@ Class SetoidTower3@{i} (A: Type@{i}) := {
     (v^)^ ~ v ;
   symmetry3_preserves_rel : forall {a b: A} {r1 r2 : a ~ b} {u1 u2: r1 ~ r2} {v1 v2: u1 ~ u2},
     v1 ~ v2 -> v1^ ~ v2^ ;
+  transitivity31_preserves_rel : forall {a b: A} {r1 r2: a ~ b} {u1 u2 u3: r1 ~ r2} {v1 v1': u1 ~ u2} {v2: u2 ~ u3},
+    v1 ~ v1' -> Setoid_Transitive _ _ _ v1 v2 ~ Setoid_Transitive _ _ _ v1' v2 ;
+  transitivity32_preserves_rel : forall {a b: A} {r1 r2: a ~ b} {u1 u2 u3: r1 ~ r2} {v1: u1 ~ u2} {v2 v2': u2 ~ u3},
+    v2 ~ v2' -> Setoid_Transitive _ _ _ v1 v2 ~ Setoid_Transitive _ _ _ v1 v2' ;
   symmetry2_preserves_rel_preserves_rel : forall {a b: A} {r1 r2: a ~ b} {u1 u2: r1 ~ r2} {v1 v2: u1 ~ u2},
     v1 ~ v2 -> symmetry2_preserves_rel v1 ~ symmetry2_preserves_rel v2 ;
 }.
@@ -81,12 +93,14 @@ Instance tower_2_to_1_rel@{i} {A: Type@{i}} {a a': A}:
 Proof.
   move=> [
     tower1
-    level2 symmetry2_involutive symmetry1_preserves_rel symmetry2_preserves_rel_preserves_rel
+    level2 symmetry2_involutive symmetry2_preserves_rel transitivity12_preserves_rel transitivity22_preserves_rel symmetry1_preserves_rel_preserves_rel
   ].
 
   unshelve eexists.
   - apply symmetry2_involutive.
-  - apply symmetry1_preserves_rel.
+  - apply symmetry2_preserves_rel.
+  - apply transitivity12_preserves_rel.
+  - apply transitivity22_preserves_rel.
 Defined.
 
 #[global]
@@ -95,12 +109,14 @@ Instance tower_3_to_2_rel@{i} {A: Type@{i}} {a a': A}:
 Proof.
   move=> [
     tower2
-    level3 symmetry3_involutive symmetry3_preserves_rel symmetry2_preserves_rel_preserves_rel
+    level3 symmetry3_involutive symmetry3_preserves_rel transitivity31_preserves_rel transitivity32_preserves_rel symmetry2_preserves_rel_preserves_rel
   ].
 
   unshelve eexists.
   - apply symmetry3_involutive.
   - apply symmetry3_preserves_rel.
+  - apply transitivity31_preserves_rel.
+  - apply transitivity32_preserves_rel.
   - apply symmetry2_preserves_rel_preserves_rel.
 Defined.
 
@@ -112,12 +128,14 @@ Register tower0 as trocq.setoid_tower_tower0.
 Register level1 as trocq.setoid_tower_level1.
 Register symmetry1_involutive as trocq.setoid_tower_symmetry1_involutive.
 Register symmetry1_preserves_rel as trocq.setoid_tower_symmetry1_preserves_rel.
+(* TODO: Register transitivity12_preserves_rel *)
 
 Register SetoidTower2 as trocq.setoid_tower2.
 Register tower1 as trocq.setoid_tower_tower1.
 Register level2 as trocq.setoid_tower_level2.
 Register symmetry2_involutive as trocq.setoid_tower_symmetry2_involutive.
 Register symmetry2_preserves_rel as trocq.setoid_tower_symmetry2_preserves_rel.
+(* TODO: Register transitivity22_preserves_rel *)
 Register symmetry1_preserves_rel_preserves_rel as trocq.setoid_tower_symmetry1_preserves_rel_preserves_rel.
 
 Register SetoidTower3 as trocq.setoid_tower3.
@@ -125,6 +143,7 @@ Register tower2 as trocq.setoid_tower_tower2.
 Register level3 as trocq.setoid_tower_level3.
 Register symmetry3_involutive as trocq.setoid_tower_symmetry3_involutive.
 Register symmetry3_preserves_rel as trocq.setoid_tower_symmetry3_preserves_rel.
+(* TODO: Register transitivity32_preserves_rel *)
 Register symmetry2_preserves_rel_preserves_rel as trocq.setoid_tower_symmetry2_preserves_rel_preserves_rel.
 
 (* Morphism of setoids *)
@@ -135,7 +154,18 @@ Record MorphismSetoid@{i j} (A: Type@{i}) (B: Type@{j}) `{SetoidTower0 A} `{Seto
 }.
 Arguments preserves_rel {_ _ _ _} _ {a1 a2}.
 
+Record MorphismSetoid'@{i j} (A: Type@{i}) (B: Type@{j}) `{SetoidTower1 A} `{SetoidTower1 B} := {
+  f' :> A -> B ;
+  preserves_rel' : forall {a1 a2},
+    a1 ~ a2 -> f' a1 ~ f' a2 ;
+  preserves_rel'_preserves_rel : forall {a1 a2} {u1 u2: a1 ~ a2},
+    u1 ~ u2 -> preserves_rel' u1 ~ preserves_rel' u2
+}.
+Arguments preserves_rel' {_ _ _ _} _ {a1 a2}.
+Arguments preserves_rel'_preserves_rel {_ _ _ _} _ {a1 a2 u1 u2}.
+
 Notation "A ~> B" := (MorphismSetoid A B) (at level 99, right associativity, B at level 200).
+Notation "A ~>' B" := (MorphismSetoid' A B) (at level 99, right associativity, B at level 200).
 
 Definition id_morphism (A: Type) `{SetoidTower0 A} : A ~> A.
 Proof.
@@ -151,4 +181,92 @@ Proof.
   - move=> ? ; by symmetry.
   - move=> ? ? ? /=.
     by apply symmetry1_preserves_rel.
+Defined.
+
+Definition id_morphism' (A: Type) `{SetoidTower1 A} : A ~>' A.
+Proof.
+  unshelve eexists.
+  - exact idmap.
+  - move=> ? ? ; exact idmap.
+  - move=> ? ? ? ? ; exact idmap.
+Defined.
+
+Definition inverse_morphism' (A: Type) `{SetoidTower2 A} (a b: A) :
+  (a ~ b) ~>' (b ~ a).
+Proof.
+  unshelve eexists.
+  - move=> ? ; by symmetry.
+  - move=> ? ? ? /=.
+    by apply symmetry1_preserves_rel.
+  - move=> ? ? ? ? ? /=.
+    by apply symmetry1_preserves_rel_preserves_rel.
+Defined.
+
+#[global]
+Instance SetoidTower0_SetoidMorphism@{i j l k | i <= l, j <= l, l <= k}
+    {A : Type@{i}} {SA: SetoidTower2 A}
+    {B : Type@{j}} {SB: SetoidTower2 B} :
+  SetoidTower0@{k} (A ~>' B).
+Proof.
+  exists.
+  unshelve eexists.
+  - exact (fun f g =>
+      forall a a', a ~ a' ~> f a ~ g a'
+    ).
+  - unshelve eexists.
+    + by apply preserves_rel'.
+    + move=> a1 a2 u ; by apply preserves_rel'_preserves_rel.
+  - move=> f g Rfg a a'.
+    unshelve eexists.
+    + move=> r ; symmetry.
+      apply Rfg ; by symmetry.
+    + move=> r1 r2 u /=.
+      apply symmetry1_preserves_rel.
+      apply (preserves_rel (Rfg a' a)).
+      by apply symmetry1_preserves_rel.
+  - move=> f g h Rfg Rgh a a'.
+    unshelve eexists.
+    + move=> r.
+      transitivity (g a).
+      * by apply Rfg.
+      * by apply Rgh.
+    + move=> r1 r2 u /=.
+      by apply transitivity12_preserves_rel, (preserves_rel (Rgh a a')).
+Defined.
+
+#[global]
+Instance SetoidTower1_SetoidMorphism@{i j l k | i <= l, j <= l, l <= k}
+    {A : Type@{i}} {SA: SetoidTower2 A}
+    {B : Type@{j}} {SB: SetoidTower2 B} :
+  SetoidTower1@{k} (A ~>' B).
+Proof.
+  unshelve eexists.
+  - apply SetoidTower0_SetoidMorphism.
+  - move=> /= f g.
+    unshelve eexists.
+    + exact (fun r1 r2 =>
+        forall a a' (u1 u2: a ~ a'), u1 ~ u2 -> r1 _ _ u1 ~ r2 _ _ u2
+      ).
+    + move=> r a a' u1 u2 v.
+      by apply (preserves_rel (r _ _)).
+    + move=> r1 r2 t a a' u1 u2 v.
+      symmetry ; apply t ; symmetry ; done.
+    + move=> r1 r2 r3 t12 t23 a a' u1 u2 v.
+      transitivity (r2 a a' u1).
+      * by apply t12.
+      * by apply t23.
+  - move=> /= f g r a a' r1 r2 v.
+    transitivity (r a a' (r1^)^) ; first by apply symmetry1_involutive.
+    apply (preserves_rel (r a a')).
+    transitivity r1 ; first by apply symmetry1_involutive.
+    trivial.
+  - move=> /= f g r1 r2 t a a' u1 u2 v.
+    by apply symmetry1_preserves_rel, t, symmetry1_preserves_rel.
+  - move=> /= f g h r1 r2 r2' t a a' u1 u2 v.
+    transitivity (Setoid_Transitive _ _ _ (r1 _ _ (Setoid_Reflexive a)) (r2' a a' u2)).
+    + by apply transitivity12_preserves_rel, (preserves_rel (r2' _ _)).
+    + apply transitivity11_preserves_rel, t.
+      reflexivity.
+  - move=> /= f g h r1 r2 r2' t a a' u1 u2 v.
+    by apply transitivity12_preserves_rel, t.
 Defined.
